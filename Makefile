@@ -54,6 +54,7 @@ CC_CHECK = gcc -fsyntax-only -fno-builtin -nostdinc -fsigned-char -m32 $(GCC_CFL
 $(foreach dir,$(SRC_DIRS) $(ASM_DIRS) $(DATA_DIRS) $(COMPRESSED_DIRS) $(MAP_DIRS) $(BGM_DIRS),$(shell mkdir -p build/$(dir)))
 
 build/src/os/O1/%.o: OPTFLAGS := -O1
+build/src/libultra/os/%.o: OPTFLAGS := -O1
 build/src/%.o: CC := python3 tools/asm_processor/build.py $(CC) -- $(AS) $(ASFLAGS) --
 build/asm/%.o: ASFLAGS += -mips3 -mabi=32
 
