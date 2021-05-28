@@ -1,6 +1,6 @@
 #include <PR/ultratypes.h>
-#include "controller.h"
-#include "siint.h"
+#include "../controller.h"
+#include "../siint.h"
 
 #define HALF_A_SECOND OS_USEC_TO_CYCLES(500000)
 
