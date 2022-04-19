@@ -1,0 +1,6 @@
+binutils-mips64-linux-gnu
+git
+ninja-build
+python3
+python3-devel
+python3-pip
