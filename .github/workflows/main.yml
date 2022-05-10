@@ -20,12 +20,29 @@ jobs:
     - name: Checkout baserom
       uses: actions/checkout@v2
       with:
-        repository: zestydevy/dinosaur-planet-private
-        token: ${{ secrets.PRIVATE_REPO_ACCESS }}
+        repository: Francessco121/dinosaur-planet-private
+        ssh-key: ${{ secrets.PRIVATE_REPO_KEY }}
         path: baserom
     - name: Decrypt baserom
       run: echo ${{ secrets.DINOSAUR_PLANET_BASEROM }} | openssl enc -d -aes-256-cbc -pass stdin -pbkdf2 -in baserom/baserom.z64.aes -out baserom.z64
     - name: Extract ROM
       run: python3 ./dino.py extract
-    - name: Build
+    - name: Build ROM
       run: python3 ./dino.py build
+    - name: Checkout progress site
+      uses: actions/checkout@v2
+      with:
+        repository: Francessco121/dino-status
+        ssh-key: ${{ secrets.STATUS_REPO_KEY }}
+        path: dino-status
+    - name: Update progress site
+      run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        python3 ./tools/progress.py --json dino-status/data/progress.json
+        cd dino-status
+        echo "Pushing new progress site data..."
+        git config user.name "GitHub Actions"
+        git config user.email "<>"
+        git add .
+        git commit -m "Progress update from ${{ github.repository }}@${{ github.sha }}"
+        git push
