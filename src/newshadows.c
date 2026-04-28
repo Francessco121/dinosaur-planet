@@ -1224,15 +1224,15 @@ s32 shadows_func_800502AC(Object* arg0, Vec3f *arg1, Unk8004FA58* arg2, s32 arg3
 
         while (sp34C < 4) {
             if (sp34C == 0) {
-                shadows_func_80052644(sp1A8, spE8, var_s5, &sp338, &arg2[11].pos, 0xC, NULL, 0U);
+                shadows_func_80052644((u8*)sp1A8, (u8*)spE8, var_s5, &sp338, &arg2[11].pos, 0xC, NULL, 0U);
             } else if (sp34C == 1) {
-                shadows_func_80052644(sp1A8, sp268, var_s5, &sp33C, &arg2[10].pos, 0xC, NULL, 0U);
-                shadows_func_80052644(sp268, spE8, sp33C, &sp338, &arg2[9].pos, 0xC, NULL, 0U);
+                shadows_func_80052644((u8*)sp1A8, (u8*)sp268, var_s5, &sp33C, &arg2[10].pos, 0xC, NULL, 0U);
+                shadows_func_80052644((u8*)sp268, (u8*)spE8, sp33C, &sp338, &arg2[9].pos, 0xC, NULL, 0U);
             } else if (sp34C == 2) {
-                shadows_func_80052644(sp1A8, sp268, var_s5, &sp33C, &arg2[8].pos, 0xC, NULL, 0U);
-                shadows_func_80052644(sp268, spE8, sp33C, &sp338, &arg2[7].pos, 0xC, NULL, 0U);
+                shadows_func_80052644((u8*)sp1A8, (u8*)sp268, var_s5, &sp33C, &arg2[8].pos, 0xC, NULL, 0U);
+                shadows_func_80052644((u8*)sp268, (u8*)spE8, sp33C, &sp338, &arg2[7].pos, 0xC, NULL, 0U);
             } else {
-                shadows_func_80052644(sp1A8, spE8, var_s5, &sp338, &arg2[6].pos, 0xC, NULL, 0U);
+                shadows_func_80052644((u8*)sp1A8, (u8*)spE8, var_s5, &sp338, &arg2[6].pos, 0xC, NULL, 0U);
             }
             if (sp338 != 0) {
                 D_800B98B8[D_80092C20] = sp338;
@@ -1335,7 +1335,7 @@ void shadows_func_80050B88(Object* arg0, Vec3f* arg1, Unk8004FA58* arg2, Unk8004
     if (temp_ft3 != 0.0f) {
         temp_ft3 = (sqrtf(temp_ft3) / (100.0f * (sp2C / 3.0f))) * 255.0f;
     }
-    if (arg0->shadow->flags & 0x40) {
+    if (arg0->shadow->flags & OBJ_SHADOW_FLAG_CUSTOM_COLOR) {
         arg9[0] = 0xFF;
     } else {
         arg9[0] = 255.0f - (s16) temp_ft3;
