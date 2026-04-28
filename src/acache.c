@@ -18,8 +18,8 @@ ACache* acache_init(u8 fileID, u8 recordsPerLoad, u8 recordSize, u8 slotCount, A
     layoutOffsets[0] = mmAlign16(sizeof(ACache));
     layoutOffsets[1] = layoutOffsets[0] + (recordsPerLoad * recordSize);
     layoutOffsets[2] = layoutOffsets[1] + (slotCount * recordSize);
-    layoutOffsets[3] = layoutOffsets[2] + (slotCount * sizeof(s16));
-    slotIndex = layoutOffsets[3] + (slotCount * sizeof(u8*));
+    layoutOffsets[3] = layoutOffsets[2] + (slotCount * 2);
+    slotIndex = layoutOffsets[3] + (slotCount * 4);
     layoutOffsets[4] = slotIndex;
     
     cache = mmAlloc(layoutOffsets[4], COLOUR_TAG_GREY, NULL);
