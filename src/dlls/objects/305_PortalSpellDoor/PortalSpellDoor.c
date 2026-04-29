@@ -48,12 +48,12 @@ void PortalSpellDoor_setup(Object* self, PortalSpellDoor_Setup* objSetup, s32 ar
             self->srt.scale = objSetup->scale * objDef->scale * ONE_OVER_SIXTY_FOUR; //@bug: unnecessary line?
             self->srt.scale = objSetup->scale * 0.35f * ONE_OVER_SIXTY_FOUR;
             objDef->scale = self->srt.scale;
-            self->unkA8 = self->def->scale * 64.0f;
+            self->visRadius = self->def->scale * 64.0f;
         } else {
             self->srt.scale = objSetup->scale * 0.35f * ONE_OVER_SIXTY_FOUR;
         }
     }
-    objData->scale = self->unkA8 * 0.5f;
+    objData->scale = self->visRadius * 0.5f;
 
     //Check if door is already open
     if (main_get_bits(objSetup->gamebitActivated)) {
@@ -62,7 +62,7 @@ void PortalSpellDoor_setup(Object* self, PortalSpellDoor_Setup* objSetup, s32 ar
             func_80059038(objSetup->hitsAnimatorID, self->parent, 0);
         }
         self->srt.flags |= OBJFLAG_INVISIBLE;
-        self->unkB0 |= 0xE000;
+        self->stateFlags |= (OBJSTATE_UPDATE_DISABLED | OBJSTATE_PRINT_DISABLED | OBJSTATE_CONTROL_DISABLED);
     }
 
     objData->timer = -1;

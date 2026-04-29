@@ -478,7 +478,7 @@ void CamControl_lock_icon_tick(void) {
     
     sCamData->targetFlags &= ~ARROW_FLAG_4_Highlighted;
     
-    if ((player == NULL) || (player->unkB0 & 0x1000)) {
+    if ((player == NULL) || (player->stateFlags & OBJSTATE_IN_SEQ)) {
         sIconState = LockIcon_STATE_Hidden;
         return;
     }
@@ -848,7 +848,7 @@ void CamControl_average_player_speed(CamControl_Data* camData, Object* player) {
     s32 i;
 
     //Copy speed samples up one slot
-    for (i = 0; i < (s32)ARRAYCOUNT(camData->speedSamples) - 1; i++) {
+    for (i = 0; i < ARRAYCOUNT_S(camData->speedSamples) - 1; i++) {
         camData->speedSamples[i] = camData->speedSamples[i + 1];
     }
 
@@ -861,7 +861,7 @@ void CamControl_average_player_speed(CamControl_Data* camData, Object* player) {
 
     //Average the 5 speed samples
     camData->speedAverage = 0.0f;
-    for (i = 0; i < (s32)ARRAYCOUNT(camData->speedSamples); i++) {
+    for (i = 0; i < ARRAYCOUNT_S(camData->speedSamples); i++) {
         camData->speedAverage += camData->speedSamples[i];
     }
     camData->speedAverage *= 0.2f;
@@ -902,7 +902,7 @@ Object* CamControl_find_highlight_object(CamControl_Data* camData, Object* playe
     for (i = 0, matchCount = 0; i < count; i++){
         obj = objects[i];
 
-        if ((obj->opacity != 0) && !(obj->srt.flags & OBJFLAG_INVISIBLE) && !(obj->unkB0 & 0x40)) {
+        if ((obj->opacity != 0) && !(obj->srt.flags & OBJFLAG_INVISIBLE) && !(obj->stateFlags & OBJSTATE_DESTROYED)) {
             if (obj->unkAF & (ARROW_FLAG_20_Removed | ARROW_FLAG_8_No_Targetting)){
                 continue;
             }

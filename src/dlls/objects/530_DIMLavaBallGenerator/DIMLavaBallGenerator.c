@@ -74,7 +74,7 @@ void DIMLavaBallGenerator_setup(Object *self, DIMLavaBallGenerator_Setup *setup,
         objdata->lfxStructs[0] = mmAlloc(sizeof(LightAction), ALLOC_TAG_OBJECTS_COL, NULL);
         objdata->lfxStructs[1] = mmAlloc(sizeof(LightAction), ALLOC_TAG_OBJECTS_COL, NULL);
     }
-    self->unkB0 |= 0x6000;
+    self->stateFlags |= (OBJSTATE_UPDATE_DISABLED | OBJSTATE_PRINT_DISABLED);
 }
 
 // offset: 0x114 | func: 1 | export: 1
@@ -122,7 +122,7 @@ void DIMLavaBallGenerator_control(Object *self) {
         lavaballSetup->unk1C = setup->unk1B;
         lavaballSetup->base.uID = setup->base.uID;
 
-        objdata->lavaball = obj_create((ObjSetup*)lavaballSetup, OBJ_INIT_FLAG1 | OBJ_INIT_FLAG4, self->mapID, -1, NULL);
+        objdata->lavaball = obj_create((ObjSetup*)lavaballSetup, OBJINIT_STANDALONE | OBJINIT_FLAG4, self->mapID, -1, NULL);
     }
 
     lavaball = objdata->lavaball;

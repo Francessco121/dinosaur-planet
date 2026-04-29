@@ -7,17 +7,30 @@
 /** Object definitions in OBJECTS.BIN.
  */
 
-enum ObjDataFlags44 { //copied from SFA; may be incorrect
-    OBJDATA_FLAG44_HaveModels               = 0x00000001,
-    OBJDATA_FLAG44_DifferentLightColor      = 0x00000010,
-    OBJDATA_FLAG44_ModelRelated             = 0x00000020,
-    OBJDATA_FLAG44_HasChildren              = 0x00000040,
-    OBJDATA_FLAG44_EnableCulling            = 0x00000400,
-    OBJDATA_FLAG44_UseDifferentModelLoading = 0x00000800,
-    OBJDATA_FLAG44_DifferentCulling         = 0x00080000,
-    OBJDATA_FLAG44_KeepHitboxWhenInvisible  = 0x00200000,
-    OBJDATA_FLAG44_HasEvent                 = 0x00400000,
-    OBJDATA_FLAG44_DidLoadModels            = 0x00800000
+enum ObjDefFlags {
+     // Objects that have no visual.
+/*0*/ OBJDEF_INVISIBLE = 0x1,
+
+/*2*/ OBJDEF_FLAG4 = 0x4,
+
+/*4*/ OBJDEF_FLAG10 = 0x10, // whether object is lit by lfx emitters?
+/*5*/ OBJDEF_FLAG20 = 0x20,
+/*6*/ OBJDEF_IS_MOBILE_MAP = 0x40,
+      // Will always be sorted in the track render list as a transparent object, 
+      // regardless of actual opacity.
+/*7*/ OBJDEF_FORCE_TRANSPARENT_DRAW_ORDER = 0x80,
+
+/*12*/ OBJDEF_FLAG1000 = 0x1000, // not used by any object
+
+       // For mobile maps, don't set as the player's parent when they are standing on the map.
+/*15*/ OBJDEF_MOBILE_MAP_NEVER_PLAYER_PARENT = 0x8000,
+/*16*/ OBJDEF_SKY_LIT = 0x10000, // if set, color from outside lighting will be blended in
+/*17*/ OBJDEF_FLAG20000 = 0x20000,
+/*18*/ OBJDEF_FLAG40000 = 0x40000,
+/*19*/ OBJDEF_STATIC_DEPTH_SORT = 0x80000,
+      // Will always be sorted in the track render list as an opaque object, 
+      // regardless of actual opacity.
+/*20*/ OBJDEF_FORCE_OPAQUE_DRAW_ORDER = 0x100000
 };
 
 enum ObjShadowType { //copied from SFA; may be incorrect
@@ -178,7 +191,7 @@ typedef struct {
 /*38*/ u8 *nextIntersectPoint; // TODO: confirm
 /*3c*/ Vec3f *nextIntersectLine; // TODO: confirm
 /*40*/ ObjDefLockData *lockdata; //z-targetting data ("lockdata" in default.dol)
-/*44*/ u32 flags; //ObjDataFlags44 // TODO: confirm (0x10000: uses colour multiplier?)
+/*44*/ u32 flags; // ObjDefFlags
 /*48*/ s16 shadowType; //ObjShadowType // TODO: confirm
 /*4a*/ s16 shadowTexture; // TODO: confirm
 /*4c*/ UNK_TYPE_8 unk4C;
@@ -230,10 +243,10 @@ typedef struct {
 /*96*/ s16 unk96;
 /*98*/ u8 _unk98[3];
 /*9b*/ u8 numLockdata; // length of lockdata (z-targetting data)
-/*9c*/ u8 unk9c;
-/*9d*/ u8 unk9d; // camera-related angle?
+/*9c*/ u8 minVisRadiusSixteenth; // minimum vis radius for this object, divided by 16
+/*9d*/ u8 staticDepthSortVal; // pre-calculated depth sort value. only used if flags has the "static depth sort" bit set
 /*9e*/ u8 _unk9e[2];
-/*a0*/ s16 unka0;
+/*a0*/ s16 mobileMapID;
 /*a2*/ s16 gametextIndex[4]; //object description line index in gametext_3 or gametext_568 (appears when holding R) (-1 when unused)
 /*aa*/ s16 unkAA; //gametextID for tutorial textbox
 } ObjDef;

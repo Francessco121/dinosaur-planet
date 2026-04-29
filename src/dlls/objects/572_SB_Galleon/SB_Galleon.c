@@ -107,7 +107,7 @@ void SB_Galleon_setup(Object *self, ObjSetup *setup, s32 arg2) {
 
     objdata = self->data;
     obj_add_object_type(self, OBJTYPE_4);
-    obj_set_update_priority(self, 90);
+    obj_set_update_priority(self, OBJPRIORITY_MOBILE_MAP);
     self->animCallback = SB_Galleon_anim_callback;
     objdata->x2 = self->srt.transl.x;
     objdata->y2 = self->srt.transl.y;
@@ -142,11 +142,11 @@ void SB_Galleon_control(Object *self) {
 
     self->mapID = objdata->mapID;
     if (!main_get_bits(BIT_SB_Battle_Started)) {
-        if (!gDLL_29_Gplay->vtbl->get_obj_group_status(self->unk34, 1)) {
-            gDLL_29_Gplay->vtbl->set_obj_group_status(self->unk34, 1, 1);
+        if (!gDLL_29_Gplay->vtbl->get_obj_group_status(self->mobileMapID, 1)) {
+            gDLL_29_Gplay->vtbl->set_obj_group_status(self->mobileMapID, 1, 1);
         }
-        if (!gDLL_29_Gplay->vtbl->get_obj_group_status(self->unk34, 3)) {
-            gDLL_29_Gplay->vtbl->set_obj_group_status(self->unk34, 3, 1);
+        if (!gDLL_29_Gplay->vtbl->get_obj_group_status(self->mobileMapID, 3)) {
+            gDLL_29_Gplay->vtbl->set_obj_group_status(self->mobileMapID, 3, 1);
         }
         self->unkDC = 0;
         return;

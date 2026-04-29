@@ -51,7 +51,7 @@ void MagicPlant_setup(Object* self, MagicPlant_Setup* objSetup, s32 arg2) {
     objData->state = MagicPlant_STATE_Growing;
     func_800240BC(self, objData->growProgress);
     self->srt.yaw = objSetup->yaw << 8;
-    self->unkB0 |= 0x2000;
+    self->stateFlags |= OBJSTATE_UPDATE_DISABLED;
 
     self->modelInstIdx = objSetup->modelInstIdx;
     if (self->modelInstIdx >= self->def->numModels) {
@@ -216,7 +216,7 @@ static void MagicPlant_create_magic_dust(Object* self, s32 objectID) {
 
     magicDust = obj_create(
         &dustSetup->base,
-        OBJ_INIT_FLAG1 | OBJ_INIT_FLAG4,
+        OBJINIT_STANDALONE | OBJINIT_FLAG4,
         self->mapID,
         -1,
         self->parent

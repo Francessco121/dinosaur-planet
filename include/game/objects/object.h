@@ -30,6 +30,41 @@ enum ObjectGroup {
 	GROUP_UNK54 = 54
 };
 
+#define OBJPRIORITY_TRIGGER 40
+#define OBJPRIORITY_PLAYER 60
+#define OBJPRIORITY_DEFAULT 80
+#define OBJPRIORITY_MOBILE_MAP 90
+#define OBJPRIORITY_ANIM 100
+
+#define OBJSTATE_UNK_ATTACH_INDEX_MASK 0x3
+#define OBJSTATE_NEXT_MODEL_INDEX_MASK 0x700
+#define OBJSTATE_NEXT_MODEL_INDEX_OFFSET 8
+
+// Note: bits 0-1 and 8-10 are integers and not flags
+enum ObjectStateFlags {
+    // For mobile map (world) objects, their hit lines will be deactivated
+    OBJSTATE_DISABLE_MODLINES = 0x4,
+    // For mobile map (world) objects, the created parent view-projection matrix
+    // (used by objects in the mobile map) will not include the world object's
+    // own scale (i.e. it will be implied to be 1.0).
+    OBJSTATE_WORLD_MTX_IGNORE_SCALE = 0x8,
+    // Object is in the global object list
+    OBJSTATE_STANDALONE = 0x10,
+    OBJSTATE_UNK20 = 0x20, // unused?
+    // Object was destroyed (not necessarily freed just yet)
+    OBJSTATE_DESTROYED = 0x40,
+    OBJSTATE_UNK80 = 0x80,
+    // If set, bits 8-10 are the model index to switch to
+    OBJSTATE_PENDING_MODEL_SWITCH = 0x800,
+    OBJSTATE_IN_SEQ = 0x1000,
+    // Update function will not be run
+    OBJSTATE_UPDATE_DISABLED = 0x2000,
+    // Print function will not be run (does not necessarily mean object is invisible)
+    OBJSTATE_PRINT_DISABLED = 0x4000,
+    // Control function will not be run
+    OBJSTATE_CONTROL_DISABLED = 0x8000
+};
+
 // base objdata of objects in group 16?
 typedef struct {
 /*0000*/ struct Object *unk0;
@@ -51,12 +86,11 @@ enum ObjectFlags {
 /*3*/ OBJFLAG_MANUAL_PREV_POSITIONS = 0x8,
 
 /*6*/ OBJFLAG_UNK_40 = 0x40,
-/*7*/ OBJFLAG_UNK_80 = 0x80,
+/*7*/ OBJFLAG_FORCE_TRANSPARENT_DRAW_ORDER = 0x80,
 
       // don't add model display list to the main display list when drawing
 /*9*/ OBJFLAG_SKIP_MODEL_DL = 0x200,
 
-       // still draws shadow
 /*12*/ OBJFLAG_SHADOW_ONLY = 0x1000,
        // whether the associated ObjSetup should be freed when the object is freed
        // TODO: this flag means more, see magicdust dll
@@ -66,11 +100,12 @@ enum ObjectFlags {
 };
 
 enum ObjInitFlags {
-    OBJ_INIT_FLAG1 = 0x1,
+    // Add object to the global object list
+    OBJINIT_STANDALONE = 0x1,
     // Whether the object ID provided for object creation is actually a direct index into OBJECTS.tab
-    OBJ_INIT_ID_IS_TABIDX = 0x2,
+    OBJINIT_BY_TABIDX = 0x2,
     // Sets whether the object owns its setup pointer
-    OBJ_INIT_FLAG4 = 0x4
+    OBJINIT_FLAG4 = 0x4
 };
 
 enum ObjSetupLoadFlags {
@@ -286,13 +321,19 @@ typedef struct {
 // Any exports referenced with a higher index are specific to an object or subtype.
 DLL_INTERFACE(DLL_IObject) {
     /*:*/ DLL_INTERFACE_BASE(DLL);
-    /*0*/ void (*setup)(struct Object *obj, ObjSetup *setup, s32);
+          // reset: true if this is not the first setup call and the object should only reset state and not perform init allocations
+    /*0*/ void (*setup)(struct Object *obj, ObjSetup *setup, s32 reset);
     /*1*/ void (*control)(struct Object *obj);
     /*2*/ void (*update)(struct Object *obj);
+          // visibility: true if the object passed distance fade and frustum culling checks
     /*3*/ void (*print)(struct Object *obj, Gfx **gdl, Mtx **mtxs, Vertex **vtxs, Triangle **pols, s8 visibility);
-    /*4*/ void (*free)(struct Object *obj, s32); // (idk what param2 is, FALSE when from deferred free, TRUE when from non-deferred free)
+          // onlySelf: true if the object should only free itself and not child/associated objects (not including linked objects)
+    /*4*/ void (*free)(struct Object *obj, s32 onlySelf);
     /*5*/ u32 (*get_model_flags)(struct Object *obj);
-    /*6*/ u32 (*get_data_size)(struct Object *obj, u32);
+          // offset: 
+          // - 1st call: byte offset from the start of the object's memory to the allocated data.
+          // - 2nd call: address of the object's allocated data.
+    /*6*/ u32 (*get_data_size)(struct Object *obj, u32 offsetAddr);
 };
 
 // arg3 and arg4 are unknown types
@@ -310,7 +351,7 @@ typedef struct Object {
 /*0018*/    Vec3f globalPosition; // world space coordinates
 /*0024*/    Vec3f velocity;
 /*0030*/    struct Object *parent; // transform is relative to this object. doesn't form a strict hierarchy
-/*0034*/    u8 unk34; //self-mapID for mobile map objects? (e.g. Galleon)
+/*0034*/    u8 mobileMapID; //self-mapID for mobile map objects (e.g. Galleon)
 /*0035*/    s8 matrixIdx;
 /*0036*/    u8 opacity;
 /*0037*/    u8 opacityWithFade; // combination of opacity and object fade out due to distance
@@ -340,13 +381,13 @@ typedef struct Object {
 /*009C*/    f32 animProgressLayered;
 /*00A0*/    s16 curModAnimId;
 /*00A2*/    s16 curModAnimIdLayered;
-/*00A4*/    f32 unkA4; //angle between camera and Object?
-/*00A8*/    f32 unkA8; //scale-related?
+/*00A4*/    f32 depthSortVal; //angle between camera and Object?
+/*00A8*/    f32 visRadius; // radius of a sphere centered on the object, of which determines if the object is within the camera frustum
 /*00AC*/    s8 mapID;
 /*00AD*/    s8 modelInstIdx; // called "modelno" in default.dol
 /*00AE*/    s8 updatePriority;
 /*00AF*/    u8 unkAF; //Target arrow flags (see InteractionArrowFlags)
-/*00B0*/    u16 unkB0; //Animation flags? (Animation updating can be switched off here). if 0x40 is set, this object was deleted
+/*00B0*/    u16 stateFlags; // ObjectStateFlags
 /*00B2*/    s16 unkB2;
 /*00B4*/    s16 unkB4;
 /*00B6*/    u8 unkB6[2];
@@ -363,7 +404,7 @@ typedef struct Object {
 /*00D5*/    u8 unkD7[0xd8 - 0xd7];
 /*00D8*/    u8 unkD8;
 /*00D9*/    u8 unkD9;
-/*00DA*/    u8 unkDA;
+/*00DA*/    u8 freeLock; // if set, object will not be freed even if attempted
 /*00DB*/    u8 unkDB[0xdc - 0xdb];
 /*00DC*/    s32 unkDC; // sometimes stores ID related to object's active sequence?
 /*00E0*/    s32 unkE0; // lifetime?
