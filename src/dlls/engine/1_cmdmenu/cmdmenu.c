@@ -3834,6 +3834,8 @@ static void cmdmenu_info_draw(Gfx** gdl, CmdmenuInfoPopup* box) {
     //Draw item count (NOTE: can't draw values under 2 or over 10, because no icons provided)
     if (box->count > 1) {
         sTempIcon->tex = sInventoryStackNumbersTex;
+
+        //@bug: crashes if count is above 10, since there's no texture frame
         sTempIcon->animProgress = (box->count - 2) << 8;
         rcp_tile_write(gdl, sTempIcon, 
             INFO_POPUP_QUANTITY_X, 

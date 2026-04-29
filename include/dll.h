@@ -117,6 +117,8 @@ enum DLL_ID {
     DLL_ID_75 = 75,
     DLL_ID_76 = 76,
 
+    DLL_ID_SELECTION = 79, //SwapStone/ShopKeeper selection screens
+
     DLL_ID_CAMNORMAL = 84,              //Start of camera module DLLs
     DLL_ID_ATTENTIONCAM1 = 85,
     DLL_ID_CAM1STPERSON = 86,
@@ -163,6 +165,7 @@ enum DLL_ID {
     DLL_ID_155 = 0x1033,
     DLL_ID_157 = 0x1035,
     DLL_ID_165 = 0x103D,
+    DLL_ID_168 = 0x1040,
     DLL_ID_170 = 0x1042,
     DLL_ID_177 = 0x1049,
     DLL_ID_180 = 0x104C,

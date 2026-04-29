@@ -100,11 +100,11 @@ void SCcollectables_setup(Object* self, Collectable_Setup* objsetup, UNK_TYPE_32
 // offset: 0x224 | func: 1 | export: 1
 void SCcollectables_control(Object* self) {
     SCCollectables_Data* objdata;
-    s32 collisionOut2;
-    s32 collisionOut3;
+    s32 hitSphereID;
+    s32 hitDamage;
     Object* messageSender;
     Object* player;
-    Object* collidedObject;
+    Object* hitBy;
     CollectableDef* collectableDef;
     f32 distance;
     u32 outMessage;
@@ -132,17 +132,22 @@ void SCcollectables_control(Object* self) {
         }
     }
     
+    //Handle being invisible
     if (self->srt.flags & OBJFLAG_INVISIBLE) {
         return;
     }
     
-    //Remove collision after collection
+    //Handle behaviour after being collected
     if (self->unkDC) {
+        //Remove collision
         if (self->objhitInfo) {
             self->objhitInfo->unk58 |= 0x100;
         }
 
-        if ((objdata->gamebitCollected != NO_GAMEBIT) && (main_get_bits(objdata->gamebitCollected) == FALSE)) {
+        //Check if collection gamebit was reset
+        if ((objdata->gamebitCollected != NO_GAMEBIT) && 
+            (main_get_bits(objdata->gamebitCollected) == FALSE)
+        ) {
             self->unkDC = 0;
         }
         return;
@@ -179,7 +184,7 @@ void SCcollectables_control(Object* self) {
     }
     
     //Handle projectile collisions (bounce sound and sparkles fly out)
-    if (func_80025F40(self, &collidedObject, &collisionOut2, &collisionOut3)) {
+    if (func_80025F40(self, &hitBy, &hitSphereID, &hitDamage)) {
         for (index = 20; index > 0; index--){
             gDLL_17_partfx->vtbl->spawn(self, 0x424, 0, 2, -1, 0);
         }

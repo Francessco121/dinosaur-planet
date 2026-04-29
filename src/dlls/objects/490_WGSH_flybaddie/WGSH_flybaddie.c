@@ -147,7 +147,7 @@ void WGSH_flybaddie_control(Object* self) {
         objdata->unk30 += (objdata->unk34 * (f32) (data_0 + 1) * gUpdateRateF);
         gDLL_17_partfx->vtbl->spawn(self, self->modelInstIdx + PARTICLE_286, NULL, 1, -1, NULL);
         gDLL_17_partfx->vtbl->spawn(self, self->modelInstIdx + PARTICLE_286, NULL, 1, -1, NULL);
-        if ((func_80025F40(self, &hitBy, NULL, NULL) == Collision_Type_Projectile) && (hitBy != NULL)) {
+        if ((func_80025F40(self, &hitBy, NULL, NULL) == Damage_Type_Projectile) && (hitBy != NULL)) {
             if (hitBy->id != OBJ_WGSH_projball) {
                 for (i = 15; i != 0; i--) {
                     gDLL_17_partfx->vtbl->spawn(self, self->modelInstIdx + PARTICLE_286, NULL, PARTFXFLAG_1, -1, NULL);

@@ -200,7 +200,7 @@ enum SoundID {
     SOUND_Sabre_Freezing_A = 0x183,     //"I'm freezing!"
     SOUND_Sabre_Exit_Icy_Water = 0x184, //"That's much better!"
 
-    SOUND_Sabre_Freezing_B = 0x184,     //"That's too cold for me!"
+    SOUND_Sabre_Freezing_B = 0x193,     //"That's too cold for me!"
 
     SOUND_19A_Magic_Reverse_Cymbal = 0x19A, //SpellOverlay
 
@@ -392,6 +392,8 @@ enum SoundID {
     SOUND_66E_Ting = 0x66E, // MagicDust
 
     SOUND_677_Metal_Clang = 0x677, // snowhorn related
+    SOUND_678 = 0x678,
+    SOUND_679 = 0x679,
 
     SOUND_688_KT_Rex_Stomp = 0x688,
     SOUND_689_KT_Rex_Stomp = 0x689,
