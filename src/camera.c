@@ -1075,7 +1075,9 @@ void camera_setup_object_srt_matrix(Gfx **gdl, Mtx **rspMtxs, SRT *srt, f32 ySca
             matrix_f2l_4x3(mtx, *rspMtxs);
             gSPMatrix((*gdl)++, OS_K0_TO_PHYSICAL((*rspMtxs)++), G_MTX_LOAD | G_MTX_MODELVIEW);
         } else {
-            // @bug: outMtx is a float matrix? shouldn't this be converted to a long matrix?
+            // Output matrix was given, so don't add matrix to the global rsp matrix list but add to
+            // the matrix pool so it still gets converted to the long format later before the display
+            // list is processed.
             gSPMatrix((*gdl)++, OS_K0_TO_PHYSICAL(outMtx), G_MTX_LOAD | G_MTX_MODELVIEW);
             add_matrix_to_pool(outMtx, 1);
         }

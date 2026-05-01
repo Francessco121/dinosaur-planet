@@ -428,6 +428,8 @@ typedef struct MapObjSetupList {
 
 #define GRID_INDEX(z, x) (((z) * BLOCKS_GRID_SPAN + (x)))
 
+#define MAX_VISIBLE_OBJECTS 180
+
 
 /* *********************************************** */
 // MARK: Globals

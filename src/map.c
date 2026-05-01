@@ -133,9 +133,12 @@ f32 D_80092AAC[24] = {
      1.0f,  1.0f, -1.0f,
      1.0f, -1.0f, -1.0f
 };
-s8 D_80092B0C[] = {
-    0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 0x08, 0x09, 0x0a, 
-    0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 
+s8 D_80092B0C[16] = {
+    0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01, 0x00, 
+    0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f
+};
+s8 D_80092B1C[] = {
+    0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 
     0x00, 0x34, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x34, 0x00, 
     0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x38, 
     0x00, 0x00, 0x00, 0x34, 0x00, 0x00, 0x00, 0x3c, 0x00, 0x00, 0x00, 
@@ -713,9 +716,9 @@ void func_8004225C(Gfx** gdl, Mtx** mtxs, Vertex** vtxs, Triangle** pols, Vertex
 void track_c_func(void) {
     s32 sp294;
     Block* block;
-    s32 temp_t2_2;
-    s32 temp_t3;
     s32 temp_v1;
+    s8 *var_s8;
+    s32 temp_v0;
     s32 sp274[4];
     s32 sp264[4];
     s32 sp254[4];
@@ -726,15 +729,7 @@ void track_c_func(void) {
     s32 temp_s1;
     s8* sp230;
     u8 sp130[BLOCKS_GRID_TOTAL_CELLS];
-    u8 _pad[0x130-0x90];
-    s8 *var_s8;
-    s32 temp_v0;
-    s32 i;
-    s32 var_v0;
-    s8 pad_sp7F;
-    s8 pad_sp7E;
-    s8 pad_sp7D;
-    s8 sp7C;
+    s8 objVisibilities[MAX_VISIBLE_OBJECTS];
     Mtx* sp78;
 
     dl_add_debug_info(gMainDL, 0, "track/track.c", 0x52B);
@@ -757,7 +752,7 @@ void track_c_func(void) {
         sp230 = gBlockIndices[sp240];
         D_800B9714 = D_800B9700[sp240];
         func_80047404(gMapCurrentStreamCoordsX + 7, gMapCurrentStreamCoordsZ + 7, sp274, sp264, sp254, sp244, sp240, 1, D_800B4A54);
-        for (i = 0; i < ARRAYCOUNT_S(sp130); i++) { sp130[i] = 0; }
+        for (temp_v1 = 0; temp_v1 < ARRAYCOUNT_S(sp130); temp_v1++) { sp130[temp_v1] = 0; }
         
         for (var_s2 = sp274[2]; sp274[3] >= var_s2; var_s2++) {
             for (temp_s1 = sp274[0]; sp274[1] >= temp_s1; temp_s1++) {
@@ -815,12 +810,12 @@ void track_c_func(void) {
             }
         }
     }
-    func_80043FD8(&sp7C);
-    draw_render_list(sp78, &sp7C);
+    func_80043FD8(objVisibilities);
+    draw_render_list(sp78, objVisibilities);
     dl_add_debug_info(gMainDL, 0, "track/track.c", 0x5B2);
     gDLL_15_Projgfx->vtbl->func5(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 2);
     gDLL_15_Projgfx->vtbl->func5(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 1);
-    gDLL_14_Modgfx->vtbl->func11(&sp7C);
+    gDLL_14_Modgfx->vtbl->func11(objVisibilities);
     gDLL_14_Modgfx->vtbl->func6(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 0, 0);
     gDLL_24_Waterfx->vtbl->func_C7C(&gMainDL, &gWorldRSPMatrices);
     gDLL_15_Projgfx->vtbl->func5(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 0);
@@ -1286,10 +1281,10 @@ void func_80043FD8(s8* objVisibilities) {
     objects = get_world_objects(NULL, NULL);
     // Separate invisible objects from visible objects
     visibleStartIdx = obj_visibility_sort_objects(&numObjs);
-    if (numObjs > 180) {
+    if (numObjs > MAX_VISIBLE_OBJECTS) {
         // TODO:
         // STUBBED_PRINTF("depthSortObjects: MAX_VISIBLE_OBJECTS exceeded\n");
-        numObjs = 180;
+        numObjs = MAX_VISIBLE_OBJECTS;
     }
     // Depth sort just the visible objects
     obj_depth_sort_objects(visibleStartIdx, numObjs - 1);
