@@ -3578,7 +3578,7 @@ void dll_210_func_90A0(Object* player, ObjFSA_Data* fsa, f32 arg2) {
                 sp104.x = temp_fs1 / temp_fv0;
                 sp104.y = temp_fs2 / temp_fv0;
                 sp104.z = temp / temp_fv0;
-                vec3_transform_no_translate(camera_get_viewmtx2(), &sp104, &sp104);
+                vec3_transform_no_translate(camera_get_view_mtx2(), &sp104, &sp104);
                 temp_v0_2->velocity.x = sp104.x * -5.0f;
                 temp_v0_2->velocity.y = sp104.y * -5.0f;
                 temp_v0_2->velocity.z = sp104.z * -5.0f;
