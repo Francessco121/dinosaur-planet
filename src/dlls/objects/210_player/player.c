@@ -8714,7 +8714,7 @@ s32 dll_210_func_18EAC(Object* player, ObjFSA_Data* fsa, f32 arg2) {
                     }
                     if (*_bss_220 == 0x777) {
                         temp_ft5 = ((sp80 - 0.5f) * 127.0f);
-                        diPrintf("throwdist %d\n\0error\n\0 Light Created \0 WARNING: Screen Overlay already used \n\0 WARNING: Screen Overlay already Killed \n", temp_ft5);
+                        diPrintf("throwdist %d\n", temp_ft5);
                         weapon = player->linkedObject;
                         ((DLL_Unknown*)weapon->dll)->vtbl->func[14].withTwoArgs((s32)weapon, temp_ft5);
                     }
@@ -8904,6 +8904,12 @@ s32 dll_210_func_18EAC(Object* player, ObjFSA_Data* fsa, f32 arg2) {
     }
     return 0;
 }
+
+// not part of dll_210_func_18EAC, keep outside of func after it's matched
+static const char str1[] = "error\n";
+static const char str2[] = " Light Created ";
+static const char str3[] = " WARNING: Screen Overlay already used \n";
+static const char str4[] = " WARNING: Screen Overlay already Killed \n";
 #endif
 
 // offset: 0x1A9D4 | func: 124

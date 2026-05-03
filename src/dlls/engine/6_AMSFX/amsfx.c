@@ -567,7 +567,7 @@ void dll_6_func_1320(Object* arg0, u16 arg1, f32 arg2, f32 arg3, f32 arg4, u32* 
         }
     }
     if ((var_v1 > 0) && (*arg5 == 0)) {
-        dll_6_play_sound(arg0, arg1, var_v1, arg5, "game/amsfx.c", 0x37B, "\0\0\0\0amSfxSetPitch: Warning,sound handle '%d' out of range.\n\0amSfxSetPitch: Warning,invalid handle '%d'.\n");
+        dll_6_play_sound(arg0, arg1, var_v1, arg5, "game/amsfx.c", 0x37B, "");
         dll_6_func_954(*arg5, arg2);
     }
     if (*arg5 != 0) {
@@ -580,6 +580,8 @@ void dll_6_func_1320(Object* arg0, u16 arg1, f32 arg2, f32 arg3, f32 arg4, u32* 
     }
 }
 
+static const char str_11[] = "amSfxSetPitch: Warning,sound handle '%d' out of range.\n";
+static const char str_12[] = "amSfxSetPitch: Warning,invalid handle '%d'.\n";
 
 void dll_6_func_1504(s32 arg0, Object* arg1, Object* arg2, f32 arg3) {
     s32 pad2;
@@ -699,7 +701,7 @@ void dll_6_func_16E0(void) {
     if (volume1 != 0) {
         if (_bss_14 == 0) {
             *_bss_20 = 1;
-            dll_6_play_sound(NULL, SOUND_987_Waterfall_High_Loop, *_bss_20, &_bss_14, "game/amsfx.c", 0x40C, "\0\0\0\0AMSFX: Maximum sfx handles allocated,%d (from %s:%d)\n\0\0\0AMSFX: allocSfxHandle handle out of range, %d\n\0\0AMSFX: freeSfxHandle invalid handle, %d\n\0\0\0\0AMSFX: freeSfxHandle not used, %d\n\0\0AMSFX: Warning min/max range identical\n");
+            dll_6_play_sound(NULL, SOUND_987_Waterfall_High_Loop, *_bss_20, &_bss_14, "game/amsfx.c", 0x40C, "");
         }
         if (volume1 < (u8) *_bss_20) {
             *_bss_20 -= 1;
@@ -709,6 +711,12 @@ void dll_6_func_16E0(void) {
         dll_6_func_860(_bss_14, *_bss_20);
     }
 }
+
+static const char str_13[] = "AMSFX: Maximum sfx handles allocated,%d (from %s:%d)\n";
+static const char str_14[] = "AMSFX: allocSfxHandle handle out of range, %d\n";
+static const char str_15[] = "AMSFX: freeSfxHandle invalid handle, %d\n";
+static const char str_16[] = "AMSFX: freeSfxHandle not used, %d\n";
+static const char str_17[] = "AMSFX: Warning min/max range identical\n";
 
 // offset: 0x1C10 | func: 20 | export: 19
 void water_falls_set_flags(u8 arg0) {
