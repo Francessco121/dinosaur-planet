@@ -10,9 +10,6 @@
 #include "sys/objprint.h"
 #include "types.h"
 
-Block* func_80044BB0(s32 blockIndex);
-s32 func_8004A528(Object* obj, u8 animatorID);
-
 typedef struct {
 /*00*/ ObjSetup base;
 /*18*/ s16 flagID;
@@ -72,7 +69,7 @@ void portaltexanimator_control(Object* self) {
     objdata = self->data;
 
     //Get the object's local BLOCKS model
-    block = func_80044BB0(func_8004454C(self->srt.transl.x, self->srt.transl.y, self->srt.transl.z));
+    block = map_get_block_by_index(map_world_coords_to_block_index(self->srt.transl.x, self->srt.transl.y, self->srt.transl.z));
     if (block == NULL) {
         objdata->blockFound = FALSE;
         return;
@@ -86,7 +83,7 @@ void portaltexanimator_control(Object* self) {
     //Animate tagged shapes' vertex opacity based on player distance
     if (objdata->animatedVertexCount == 0) {
         objdata->animatorID = setup->animatorID;
-        objdata->animatedVertexCount = func_8004A528(self, objdata->animatorID);
+        objdata->animatedVertexCount = block_get_animator_vertex_count(self, objdata->animatorID);
 
         if (objdata->animatedVertexCount == 0) {
             objdata->animatorID = 0;
