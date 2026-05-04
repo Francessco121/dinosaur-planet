@@ -87,7 +87,7 @@ class OverallProgress:
 def get_core_func_sizes(elf_path: Path) -> "tuple[dict[str, int], int]":
     # Get functions and their sizes from the given .elf
     try:
-        result = subprocess.run(['mips-linux-gnu-readelf', '--symbols', elf_path], stdout=subprocess.PIPE)
+        result = subprocess.run(['mips-linux-gnu-readelf', '--symbols', '--wide', elf_path], stdout=subprocess.PIPE)
         lines = result.stdout.decode().split("\n")
     except:
         print(f"Error: Could not run mips-linux-gnu-readelf on {elf_path} - make sure that the project is built")
