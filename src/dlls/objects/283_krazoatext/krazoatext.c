@@ -135,12 +135,12 @@ void krazoatext_free(Object* self, s32 arg1) {
 }
 
 // offset: 0x414 | func: 5 | export: 5
-u32 dll_283_get_model_flags(Object* self) {
+u32 krazoatext_get_model_flags(Object* self) {
     return MODFLAGS_NONE;
 }
 
 // offset: 0x424 | func: 6 | export: 6
-u32 dll_283_get_data_size(Object *self, u32 a1) {
+u32 krazoatext_get_data_size(Object *self, u32 a1) {
     return sizeof(KText_Data);
 }
 

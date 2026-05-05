@@ -168,7 +168,7 @@ void portaltexanimator_animate_vertices(PortalTexAnimator_Data* objdata, PortalT
 }
 
 // offset: 0x414 | func: 3 | export: 2
-void dll_362_func_414(Object *self) { }
+void portaltexanimator_update(Object *self) { }
 
 // offset: 0x420 | func: 4 | export: 3
 void portaltexanimator_print(Object* self, Gfx** gfx, Mtx** mtx, Vertex** vtx, Triangle** pols, s8 visibility) {

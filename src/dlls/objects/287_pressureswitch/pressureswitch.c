@@ -31,10 +31,10 @@ static s32 pressureswitch_is_object_on_switch(Object* self);
 static int pressureswitch_anim_callback(Object* self, Object* animObj, AnimObj_Data* animObjData, s8 arg3);
 
 // offset: 0x0 | ctor
-void dll_287_ctor(void *dll) { }
+void pressureswitch_ctor(void *dll) { }
 
 // offset: 0xC | dtor
-void dll_287_dtor(void *dll) { }
+void pressureswitch_dtor(void *dll) { }
 
 // offset: 0x18 | func: 0 | export: 0
 void pressureswitch_setup(Object* self, PressureSwitch_Setup* setup, s32 arg2) {

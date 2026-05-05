@@ -23,10 +23,10 @@ typedef struct {
 } FlameBlast_Data;
 
 // offset: 0x0 | ctor
-void dll_278_ctor(void* dll){ }
+void flameblast_ctor(void* dll){ }
 
 // offset: 0xC | dtor
-void dll_278_dtor(void* dll){ }
+void flameblast_dtor(void* dll){ }
 
 // offset: 0x18 | func: 0 | export: 0
 void flameblast_setup(Object* self, FlameBlast_Setup* setup, s32 arg2) {

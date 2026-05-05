@@ -315,8 +315,8 @@ def print_progress(p: OverallProgress, show_banks: bool):
         print(f"    {p.dll_projgfx.matching_funcs} matched projgfx DLL functions / {p.dll_projgfx.total_funcs} total ({p.dll_projgfx.matching_funcs_ratio * 100:.2f}%)")
         print(f"    {p.dll_projgfx.matching_bytes} matching projgfx DLL bytes / {p.dll_projgfx.total_bytes} total ({p.dll_projgfx.matching_bytes_ratio * 100:.2f}%)")
         print()
-        print(f"    {p.dll_objects.matching_funcs} matched objects DLL functions / {p.dll_objects.total_funcs} total ({p.dll_objects.matching_funcs_ratio * 100:.2f}%)")
-        print(f"    {p.dll_objects.matching_bytes} matching objects DLL bytes / {p.dll_objects.total_bytes} total ({p.dll_objects.matching_bytes_ratio * 100:.2f}%)") 
+        print(f"    {p.dll_objects.matching_funcs} matched object DLL functions / {p.dll_objects.total_funcs} total ({p.dll_objects.matching_funcs_ratio * 100:.2f}%)")
+        print(f"    {p.dll_objects.matching_bytes} matching object DLL bytes / {p.dll_objects.total_bytes} total ({p.dll_objects.matching_bytes_ratio * 100:.2f}%)") 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Computes and reports progress for the project.")
