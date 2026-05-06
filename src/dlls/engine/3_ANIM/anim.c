@@ -4,6 +4,8 @@
 
 #include "dlls/objects/210_player.h"
 #include "dlls/objects/214_animobj.h"
+#include "game/objects/object.h"
+#include "macros.h"
 #include "sys/menu.h"
 #include "sys/objlib.h"
 
@@ -188,7 +190,7 @@ typedef struct {
 /*0x4F0*/ static u8 _bss_4F0[0xb4];
 /*0x5A4*/ static u8 _bss_5A4[0x4];
 /*0x5A8*/ static u8 _bss_5A8[0x4];
-/*0x5AC*/ static u8 _bss_5AC[0x4];
+/*0x5AC*/ static u8 _bss_5AC[0x4]; //TODO: just u8?
 /*0x5B0*/ static u8 _bss_5B0[0x8];
 /*0x5B8*/ static Vec3f _bss_5B8;
 /*0x5C4*/ static u8 _bss_5C4[0x4];
@@ -1289,24 +1291,25 @@ s32 dll_3_func_88CC(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
 void dll_3_func_88E8(s32 arg0, s32 arg1, s32 arg2, s32 arg3) { }
 
 // offset: 0x8900 | func: 52 | export: 17
-s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 arg2) {
-    AnimObj_Setup* temp_v0_5;
-    Object* temp_v0_6;
+// official name: startObjSequence
+s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 enabledActors) {
+    AnimObj_Setup* actorSetup;
+    Object* actorObj;
     f32 temp_fv1;
-    s32 sp88;
-    s32 temp;
-    s16* temp_s0_2;
+    s32 numActors;
+    s32 actorObjID;
+    s16* tabEntry;
     s32 sp7C;
-    s32 var_s1;
+    s32 i;
     s32 temp_v1_4;
-    Actor* sp70;
+    Actor* actors;
     s32 temp_v0_7;
     Object* sp68;
-    s32 i;
-    AnimObj_Data* temp_a0_3;
-    f32 sp5C; // var_fv1
-    f32 sp58; // var_fa1
-    f32 sp54; // var_fa0
+    s32 j;
+    AnimObj_Data* actorObjData;
+    f32 sp5C;
+    f32 sp58;
+    f32 sp54;
     s16 sp52;
     s32 sp4C;
     s32 sp48;
@@ -1315,18 +1318,21 @@ s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 arg2) {
     if (objectSeqIndex == -1) {
         return -1;
     }
-    for (var_s1 = 25; var_s1 < 45; var_s1++) {
-        if (_bss_168[var_s1] == 0) {
-            sp7C = var_s1;
-            _bss_168[var_s1] = 1;
-            dll_3_func_9BC0(var_s1);
-            var_s1 = 46;
+    for (i = 25; i < 45; i++) {
+        if (_bss_168[i] == 0) {
+            sp7C = i;
+            _bss_168[i] = 1;
+            dll_3_func_9BC0(i);
+            i = 46;
         }
     }
-    if (var_s1 == 45) {
+    if (i == 45) {
+        // STUBBED_PRINTF("game/anim.c: startObjSequence() couldn't find seqno free (ABORTED)!!\n"); // default.dol
         return -1;
     }
     if ((objectSeqIndex < 0) || (objectSeqIndex >= object->def->numSequences)) {
+        // Note: default.dol also moves this check to be right before the above loop
+        // STUBBED_PRINTF("game/anim.c: startObjSequence() seqno out of range [%d][%d]\n", object->id, objectSeqIndex); // default.dol
         return -1;
     }
     if (object->def->pSeq != NULL) {
@@ -1335,11 +1341,11 @@ s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 arg2) {
     if ((object->unkB4 != -1) && (_data_24 == NULL)) {
         dll_3_func_906C(object->unkB4);
     }
-    sp70 = mmAlloc(0x80, ALLOC_TAG_ANIMSEQ_COL, NULL);
-    temp_s0_2 = (s16*)sp70;
-    queue_load_file_region_to_ptr((void*)sp70, OBJSEQ_TAB, objectSeqIndex * 2, 8);
-    sp88 = temp_s0_2[1] - temp_s0_2[0];
-    queue_load_file_region_to_ptr((void*)sp70, OBJSEQ_BIN, ((s16*)temp_s0_2)[0] * 8, sp88 * 8);
+    actors = mmAlloc(sizeof(Actor) * 16, ALLOC_TAG_ANIMSEQ_COL, NULL);
+    tabEntry = (s16*)actors;
+    queue_load_file_region_to_ptr((void*)actors, OBJSEQ_TAB, objectSeqIndex * sizeof(s16), 8);
+    numActors = tabEntry[1] - tabEntry[0];
+    queue_load_file_region_to_ptr((void*)actors, OBJSEQ_BIN, ((s16*)tabEntry)[0] * sizeof(Actor), numActors * sizeof(Actor));
     if (_data_24 != NULL) {
         object = _data_24;
     }
@@ -1362,105 +1368,105 @@ s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 arg2) {
     _bss_3A8[object->unkB4] = 0;
     _bss_4C0[object->unkB4] = 0;
     _bss_3D8[object->unkB4] = object->id;
-    for (var_s1 = 0; var_s1 < sp88; var_s1++) {
-        if ((1 << var_s1) & arg2) {
-            temp_v0_5 = obj_alloc_setup(sizeof(AnimObj_Setup), OBJ_Override);
-            temp = sp70[var_s1].objID;
-            if (temp == 0xFFFF) {
-                temp_v0_5->base.objId = OBJ_Override;
-                temp_v0_5->unk1C = object->id + 4;
+    for (i = 0; i < numActors; i++) {
+        if ((1 << i) & enabledActors) {
+            actorSetup = obj_alloc_setup(sizeof(AnimObj_Setup), OBJ_Override);
+            actorObjID = actors[i].objID;
+            if (actorObjID == 0xFFFF) {
+                actorSetup->base.objId = OBJ_Override;
+                actorSetup->unk1C = object->id + 4;
                 if ((object->id == OBJ_VariableObject) && (_data_20 != -1)) {
-                    temp_v0_5->unk1C = _data_20 + 4;
+                    actorSetup->unk1C = _data_20 + 4;
                 }
-                sp70[var_s1].settings |= 0x8000;
-            } else if (temp == 0xFFFE) {
-                temp_v0_5->base.objId = OBJ_AnimCamera;
-                temp_v0_5->unk1C = 3;
-            } else if (sp70[var_s1].settings & 0x4000) {
-                temp_v0_5->base.objId = OBJ_Override;
-                temp_v0_5->unk1C = temp + 4;
+                actors[i].settings |= 0x8000;
+            } else if (actorObjID == 0xFFFE) {
+                actorSetup->base.objId = OBJ_AnimCamera;
+                actorSetup->unk1C = 3;
+            } else if (actors[i].settings & 0x4000) {
+                actorSetup->base.objId = OBJ_Override;
+                actorSetup->unk1C = actorObjID + 4;
             } else {
-                temp_v0_5->base.objId = temp;
-                temp_v0_5->unk1C = 0;
+                actorSetup->base.objId = actorObjID;
+                actorSetup->unk1C = 0;
             }
-            if (sp70[var_s1].settings & 0x8000) {
-                temp_v0_5->unk20 = 0;
-                temp_v0_5->unk21 = 0;
+            if (actors[i].settings & 0x8000) {
+                actorSetup->unk20 = 0;
+                actorSetup->unk21 = 0;
             } else {
-                temp_v0_5->unk20 = 1;
-                temp_v0_5->unk21 = 1;
+                actorSetup->unk20 = 1;
+                actorSetup->unk21 = 1;
             }
-            temp_v0_5->sequenceIdBitfield = ((objectSeqIndex & 0x7FF) * 0x10) | 0x8000 | (var_s1 & 0xF);
-            temp_v0_5->unk1A = -1;
-            if (var_s1 != 0) {
-                if ((*_bss_5AC != 0) && (temp_v0_5->base.objId == OBJ_AnimCamera)) {
-                    temp_v0_5->base.x = sp5C + _bss_5B8.x;
-                    temp_v0_5->base.y = sp58 + _bss_5B8.y;
-                    temp_v0_5->base.z = sp54 + _bss_5B8.z;
+            actorSetup->sequenceIdBitfield = ((objectSeqIndex & 0x7FF) * 0x10) | 0x8000 | (i & 0xF);
+            actorSetup->unk1A = -1;
+            if (i != 0) {
+                if ((*_bss_5AC != 0) && (actorSetup->base.objId == OBJ_AnimCamera)) {
+                    actorSetup->base.x = sp5C + _bss_5B8.x;
+                    actorSetup->base.y = sp58 + _bss_5B8.y;
+                    actorSetup->base.z = sp54 + _bss_5B8.z;
                     *_bss_5AC = 0;
                 } else {
-                    temp_v0_5->base.x = sp5C;
-                    temp_v0_5->base.y = sp58;
-                    temp_v0_5->base.z = sp54;
+                    actorSetup->base.x = sp5C;
+                    actorSetup->base.y = sp58;
+                    actorSetup->base.z = sp54;
                 }
             } else {
-                temp_v0_5->base.x = object->srt.transl.f[0];
-                temp_v0_5->base.y = object->srt.transl.f[1];
-                temp_v0_5->base.z = object->srt.transl.f[2];
+                actorSetup->base.x = object->srt.transl.f[0];
+                actorSetup->base.y = object->srt.transl.f[1];
+                actorSetup->base.z = object->srt.transl.f[2];
             }
-            temp_v0_5->unk1F = sp7C;
-            temp_v0_5->unk22 = 1;
-            temp_v0_5->unk24 = sp70[var_s1].settings & 0x7F;
-            temp_v0_5->base.loadFlags = 2;
-            temp_v0_5->base.byte5 = 1;
-            if (temp_v0_5->base.objId == OBJ_AnimCamera) {
-                temp_v0_5->base.loadFlags = 1;
+            actorSetup->unk1F = sp7C;
+            actorSetup->unk22 = 1;
+            actorSetup->unk24 = actors[i].settings & 0x7F;
+            actorSetup->base.loadFlags = OBJSETUP_LOAD_MANUAL;
+            actorSetup->base.fadeFlags = OBJSETUP_FADE_MANUAL;
+            if (actorSetup->base.objId == OBJ_AnimCamera) {
+                actorSetup->base.loadFlags = OBJSETUP_LOAD_LEVEL;
             }
-            if ((temp_v0_5->base.objId == OBJ_VariableObject) && (_data_20 != -1)) {
-                temp_v0_5->base.objId = _data_20;
+            if ((actorSetup->base.objId == OBJ_VariableObject) && (_data_20 != -1)) {
+                actorSetup->base.objId = _data_20;
             }
-            temp_v0_6 = obj_create(&temp_v0_5->base, 5U, -1, -1, sp68);
-            temp_v0_6->unkB4 = -2;
-            temp_a0_3 = temp_v0_6->data;
-            temp_a0_3->unk1A = sp52;
-            temp_a0_3->unk7A = -1;
-            temp_a0_3->unk7A &= ~0x400;
-            for (i = 0; i < 4; i++) {
-                temp_a0_3->unk138[i] = 0;
+            actorObj = obj_create(&actorSetup->base, OBJINIT_FLAG4 | OBJINIT_STANDALONE, -1, -1, sp68);
+            actorObj->unkB4 = -2;
+            actorObjData = actorObj->data;
+            actorObjData->unk1A = sp52;
+            actorObjData->unk7A = -1;
+            actorObjData->unk7A &= ~0x400;
+            for (j = 0; j < 4; j++) {
+                actorObjData->unk138[j] = 0;
             }
-            if (sp70[var_s1].settings & 0x80) {
-                temp_a0_3->unk62 = 4;
-                if (sp70[var_s1].settings & 0x7F) {
-                    sp4C = sp70[var_s1].settings & 0x7F;
+            if (actors[i].settings & 0x80) {
+                actorObjData->unk62 = 4;
+                if (actors[i].settings & 0x7F) {
+                    sp4C = actors[i].settings & 0x7F;
                 } else {
                     sp4C = 0;
                 }
                 sp48 = 1;
             } else {
-                temp_a0_3->unk62 = -1;
+                actorObjData->unk62 = -1;
             }
-            temp_a0_3->unk118 = sp70[var_s1].uid;
-            temp_v1_4 = (sp70[var_s1].settings >> 8) & 0x3F;
+            actorObjData->unk118 = actors[i].uid;
+            temp_v1_4 = (actors[i].settings >> 8) & 0x3F;
             if (temp_v1_4 & 1) {
-                temp_a0_3->unk7A &= ~1;
+                actorObjData->unk7A &= ~1;
             }
             if (temp_v1_4 & 2) {
-                temp_a0_3->unk7A &= ~2;
+                actorObjData->unk7A &= ~2;
             }
             if (temp_v1_4 & 4) {
-                temp_a0_3->unk1A = 0;
+                actorObjData->unk1A = 0;
             }
             if (temp_v1_4 & 8) {
-                temp_a0_3->unk7A &= ~0x100;
+                actorObjData->unk7A &= ~0x100;
             }
             if (temp_v1_4 & 0x20) {
-                temp_a0_3->unk8C |= 2;
+                actorObjData->unk8C |= 2;
             }
-            temp_a0_3->unk7C = temp_a0_3->unk7A;
-            if (var_s1 == 0) {
+            actorObjData->unk7C = actorObjData->unk7A;
+            if (i == 0) {
                 _bss_3A8[object->unkB4] = temp_v1_4;
-                _bss_3D8[object->unkB4] = temp_v0_6->setup->uID;
-                if ((object->def->flags & 0x40) && !(object->def->flags & 0x8000)) {
+                _bss_3D8[object->unkB4] = actorObj->setup->uID;
+                if ((object->def->flags & OBJDEF_IS_MOBILE_MAP) && !(object->def->flags & OBJDEF_MOBILE_MAP_NEVER_PLAYER_PARENT)) {
                     sp68 = object;
                     sp5C = 0.0f;
                     sp58 = 0.0f;
@@ -1477,11 +1483,11 @@ s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 arg2) {
     if (temp_v0_7 != 0) {
         _bss_3A8[object->unkB4] |= 0x10;
     }
-    dll_3_func_2C0(sp7C, temp_v0_7, sp88);
+    dll_3_func_2C0(sp7C, temp_v0_7, numActors);
     if (sp48 != 0) {
         dll_3_func_9CE8(sp4C);
     }
-    mmFree(sp70);
+    mmFree(actors);
     _data_1C = 0;
     _bss_1D88.unk0_8 = 0;
     return sp7C;
