@@ -15,7 +15,7 @@ typedef struct {
     s8 unk1E;
     s8 unk1F;
     s8 unk20;
-    u8 pad21;
+    s8 unk21;
     s8 unk22;
     s8 unk23;
     u8 unk24;
@@ -82,9 +82,14 @@ typedef struct AnimObj_Data {
 /*0CE*/ s16 channelTotalKeys[ANIMCURVES_KEYFRAME_CHANNELS];
 /*0F4*/ AnimObj_DataF4Callback unkF4; //end-of-sequence callback function
 /*0F8*/ AnimObj_DataF8Callback unkF8;
-/*0FC*/ s8 unkFC[0x11C - 0xFC];
+/*0FC*/ s8 unkFC[0x118 - 0xFC];
+/*118*/ s32 unk118;
 /*11C*/ Object* unk11C;
-/*120*/ s8 unk120[0x142 - 0x120];
+/*120*/ s16 unk120;
+/*122*/ s16 unk122;
+/*124*/ s8 unk124[0x138 - 0x124];
+/*138*/ u8 unk138[4];
+/*13C*/ s8 unk13C[0x142 - 0x13C];
 /*142*/ u8 unk142_4: 4;
 /*142*/ u8 unk142_0: 4;
 /*143*/ s8 unk143[0x144 - 0x143];
