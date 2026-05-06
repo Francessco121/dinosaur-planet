@@ -154,8 +154,8 @@ void SCAnimObj_print(Object *self, Gfx **gdl, Mtx **mtxs, Vertex **vtxs, Triangl
                 sTransform.transl.x += rand_next(-50, 50) / 10.0f;
                 sTransform.transl.z += rand_next(-50, 50) / 10.0f;
                 
-                gDLL_24_Waterfx->vtbl->func_174C(sTransform.transl.x, self->srt.transl.y, sTransform.transl.z, 4.0f);
-                gDLL_24_Waterfx->vtbl->func_1CC8(sTransform.transl.x, self->srt.transl.y, sTransform.transl.z, 0, 0.0f, 3);
+                gDLL_24_Waterfx->vtbl->spawn_splash(sTransform.transl.x, self->srt.transl.y, sTransform.transl.z, 4.0f);
+                gDLL_24_Waterfx->vtbl->spawn_circular_ripple(sTransform.transl.x, self->srt.transl.y, sTransform.transl.z, 0, 0.0f, 3);
             }
             
             gDLL_6_AMSFX->vtbl->play(self, SOUND_3D8_Water_Splash, MAX_VOLUME, 0, 0, 0, 0);

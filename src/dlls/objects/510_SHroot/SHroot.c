@@ -106,8 +106,8 @@ void dll_510_control(Object* self) {
         self->srt.transl.f[1] += self->velocity.f[1] * gUpdateRateF;
         if (!(objData->unk13 & 1) && (objData->unk13 & 4)) {
             if (self->srt.transl.f[1] < (objData->unk8 + 10.0f)) {
-                gDLL_24_Waterfx->vtbl->func_174C(self->srt.transl.f[0], objData->unk8, self->srt.transl.f[2], 10.0f);
-                gDLL_24_Waterfx->vtbl->func_1CC8(self->srt.transl.f[0], objData->unk8, self->srt.transl.f[2], 0, 0.0f, 2);
+                gDLL_24_Waterfx->vtbl->spawn_splash(self->srt.transl.f[0], objData->unk8, self->srt.transl.f[2], 10.0f);
+                gDLL_24_Waterfx->vtbl->spawn_circular_ripple(self->srt.transl.f[0], objData->unk8, self->srt.transl.f[2], 0, 0.0f, 2);
                 gDLL_6_AMSFX->vtbl->play(self, SOUND_3D8_Water_Splash, MAX_VOLUME, NULL, NULL, 0, NULL);
                 objData->unk13 |= 1 ;
             }

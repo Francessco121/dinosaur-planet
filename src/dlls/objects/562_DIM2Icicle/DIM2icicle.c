@@ -124,8 +124,8 @@ void DIM2Icicle_control(Object* self) {
         if (self->srt.transl.y < objData->groundHeight) {
             main_set_bits(objSetup->gamebitFell, 1);
             objData->state = DIM2Icicle_STATE_Fall_Finished;
-            gDLL_24_Waterfx->vtbl->func_174C(self->srt.transl.x, objData->groundHeight, self->srt.transl.z, 10.0f);
-            gDLL_24_Waterfx->vtbl->func_1CC8(self->srt.transl.x, objData->groundHeight, self->srt.transl.z, 0, 0.0f, 2);
+            gDLL_24_Waterfx->vtbl->spawn_splash(self->srt.transl.x, objData->groundHeight, self->srt.transl.z, 10.0f);
+            gDLL_24_Waterfx->vtbl->spawn_circular_ripple(self->srt.transl.x, objData->groundHeight, self->srt.transl.z, 0, 0.0f, 2);
             gDLL_6_AMSFX->vtbl->play(self, SOUND_3D8_Water_Splash, MAX_VOLUME, NULL, NULL, 0, NULL);
             objData->soundTimer = 150;
             return;

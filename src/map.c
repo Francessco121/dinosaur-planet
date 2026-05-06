@@ -809,7 +809,7 @@ void track_draw_main(void) {
     gDLL_15_Projgfx->vtbl->func5(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 1);
     gDLL_14_Modgfx->vtbl->func11(objVisibilities);
     gDLL_14_Modgfx->vtbl->func6(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 0, 0);
-    gDLL_24_Waterfx->vtbl->func_C7C(&gMainDL, &gWorldRSPMatrices);
+    gDLL_24_Waterfx->vtbl->print(&gMainDL, &gWorldRSPMatrices);
     gDLL_15_Projgfx->vtbl->func5(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, 0);
     gDLL_2_Camera->vtbl->lock_icon_print(&gMainDL, &gWorldRSPMatrices, &D_800B51D4, &D_800B51D8);
     gDLL_59_Minimap->vtbl->func1(&gMainDL, &gWorldRSPMatrices);
@@ -2768,7 +2768,7 @@ void map_func_8004773C(void) {
     D_800B4A50 = -1;
     D_800B4A54 = -1;
     gMapLayer = savedPlayerLocation->mapLayer;
-    gDLL_24_Waterfx->vtbl->func_24C();
+    gDLL_24_Waterfx->vtbl->init();
     gDLL_11_Newlfx->vtbl->func1();
     gDLL_57->vtbl->func0();
     gDLL_58->vtbl->func0();

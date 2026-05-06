@@ -1480,8 +1480,8 @@ void dll_210_func_363C(Object* player, Player_Data* arg1, Gfx** arg2, Mtx** arg3
             for (i = 0; i < 7; i++) {
                 _bss_40.transl.x += rand_next(-0x32, 0x32) / 10.0f;
                 _bss_40.transl.z += rand_next(-0x32, 0x32) / 10.0f;
-                gDLL_24_Waterfx->vtbl->func_174C(_bss_40.transl.x, player->srt.transl.y, _bss_40.transl.z, 4.0f);
-                gDLL_24_Waterfx->vtbl->func_1CC8(_bss_40.transl.x, player->srt.transl.y, _bss_40.transl.z, 0, 0.0f, 3);
+                gDLL_24_Waterfx->vtbl->spawn_splash(_bss_40.transl.x, player->srt.transl.y, _bss_40.transl.z, 4.0f);
+                gDLL_24_Waterfx->vtbl->spawn_circular_ripple(_bss_40.transl.x, player->srt.transl.y, _bss_40.transl.z, 0, 0.0f, 3);
             }
             arg1->flags &= 0xFFFDFFFF;
         }
@@ -6531,8 +6531,8 @@ s32 dll_210_func_125BC(Object* player, ObjFSA_Data* fsa, f32 arg2) {
         for (i = 0; i < 3; i++) {
             temp_fs0 = ((f32) rand_next(-0x32, 0x32) / 10.0f) + player->srt.transl.x;
             temp_fs1 = ((f32) rand_next(-0x32, 0x32) / 10.0f) + player->srt.transl.z;
-            gDLL_24_Waterfx->vtbl->func_174C(temp_fs0, temp_s3->waterY, temp_fs1, 4.0f);
-            gDLL_24_Waterfx->vtbl->func_1CC8(temp_fs0, temp_s3->waterY, temp_fs1, 0, 0.0f, 3);
+            gDLL_24_Waterfx->vtbl->spawn_splash(temp_fs0, temp_s3->waterY, temp_fs1, 4.0f);
+            gDLL_24_Waterfx->vtbl->spawn_circular_ripple(temp_fs0, temp_s3->waterY, temp_fs1, 0, 0.0f, 3);
         }
     }
     if (temp_s3->underwaterDist > 25.0f && temp_s3->floorDist < 100.0f) {
@@ -6698,11 +6698,11 @@ s32 dll_210_func_12BF0(Object* player, ObjFSA_Data* fsa, f32 arg2) {
                 sp78 = (rand_next(-0x14, 0x14) / 10.0f) + 5.0f;
                 sp70 = (rand_next(-0x14, 0x14) / 10.0f) + 2.0f;
                 vec3_transform(&sp7C, sp78, 0.0f, sp70, &sp78, &sp74, &sp70);
-                gDLL_24_Waterfx->vtbl->func_1CC8(sp78, temp_s0->waterY, sp70, 0, 0.0f, 3);
+                gDLL_24_Waterfx->vtbl->spawn_circular_ripple(sp78, temp_s0->waterY, sp70, 0, 0.0f, 3);
                 sp78 = (rand_next(-0x14, 0x14) / 10.0f) + -5.0f;
                 sp70 = (rand_next(-0x14, 0x14) / 10.0f) + 2.0f;
                 vec3_transform(&sp7C, sp78, 0.0f, sp70, &sp78, &sp74, &sp70);
-                gDLL_24_Waterfx->vtbl->func_1CC8(sp78, temp_s0->waterY, sp70, 0, 0.0f, 3);
+                gDLL_24_Waterfx->vtbl->spawn_circular_ripple(sp78, temp_s0->waterY, sp70, 0, 0.0f, 3);
             }
             if ((player->velocity.f[1] > -0.1f) && (player->velocity.f[1] < 0.1f)) {
                 temp_s1->unk880 -= gUpdateRate;
@@ -6859,7 +6859,7 @@ s32 dll_210_func_13524(Object* player, ObjFSA_Data* fsa, f32 arg2) {
                     sp114 = (rand_next(-0x14, 0x14) / 10.0f) + 10.0f;
                     sp10C = (rand_next(-0x14, 0x14) / 10.0f) + -17.0f;
                     vec3_transform(&spCC, sp114, 0.0f, sp10C, &sp114, &sp110, &sp10C);
-                    gDLL_24_Waterfx->vtbl->func_1CC8(sp114, dll27data->waterY, sp10C, 0, 0.0f, 3);
+                    gDLL_24_Waterfx->vtbl->spawn_circular_ripple(sp114, dll27data->waterY, sp10C, 0, 0.0f, 3);
                 }
             }
             if (fsa->unk308 & 0x400) {
@@ -6867,7 +6867,7 @@ s32 dll_210_func_13524(Object* player, ObjFSA_Data* fsa, f32 arg2) {
                     sp114 = (rand_next(-0x14, 0x14) / 10.0f) + -10.0f;
                     sp10C = (rand_next(-0x14, 0x14) / 10.0f) + -17.0f;
                     vec3_transform(&spCC, sp114, 0.0f, sp10C, &sp114, &sp110, &sp10C);
-                    gDLL_24_Waterfx->vtbl->func_1CC8(sp114, dll27data->waterY, sp10C, 0, 0.0f, 3);
+                    gDLL_24_Waterfx->vtbl->spawn_circular_ripple(sp114, dll27data->waterY, sp10C, 0, 0.0f, 3);
                 }
             }
         }
