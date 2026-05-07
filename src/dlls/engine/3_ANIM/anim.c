@@ -1255,7 +1255,60 @@ void dll_3_func_7CF0(void);
 #pragma GLOBAL_ASM("asm/nonmatchings/dlls/engine/3_ANIM/dll_3_func_7CF0.s")
 
 // offset: 0x81F8 | func: 44
-#pragma GLOBAL_ASM("asm/nonmatchings/dlls/engine/3_ANIM/dll_3_func_81F8.s")
+Object* dll_3_func_81F8(Object* animObj) {
+    AnimObj_Data *objdata;
+    s32 numObjs;
+    s32 start;
+    Object** objList;
+    AnimObj_Setup *objsetup;
+    s32 targetObjID;
+    s32 i;
+    Object *obj;
+    f32 xDist;
+    f32 yDist;
+    f32 zDist;
+    f32 dist;
+    Object* closestObj;
+    f32 closestDist;
+
+    objdata = animObj->data;
+    
+    if (objdata->unk118 != 0) {
+        return func_800211B4(objdata->unk118);
+    }
+    
+    objList = get_world_objects(&start, &numObjs);
+    
+    objsetup = (AnimObj_Setup*)animObj->setup;
+    targetObjID = objsetup->unk1C - 4;
+    
+    if ((targetObjID == OBJ_Krystal) || (targetObjID == OBJ_Sabre)) {
+        return get_player();
+    }
+    if ((targetObjID == OBJ_Tricky) || (targetObjID == OBJ_Kyte)) {
+        return get_sidekick();
+    }
+    
+    closestObj = NULL;
+    closestDist = -1.0f;
+    for (i = 0; i < numObjs; i++) {
+        obj = objList[i];
+
+        if (targetObjID == obj->id) {
+            xDist = animObj->srt.transl.x - obj->srt.transl.x;
+            yDist = animObj->srt.transl.y - obj->srt.transl.y;
+            zDist = animObj->srt.transl.z - obj->srt.transl.z;
+            dist = SQ(xDist) + SQ(yDist) + SQ(zDist);
+
+            if ((closestDist < 0.0f) || (dist < closestDist)) {
+                closestObj = obj;
+                closestDist = dist;
+            }
+        }
+    }
+    
+    return closestObj;
+}
 
 // offset: 0x8598 | func: 45 | export: 10
 s16 dll_3_func_8598(Object* animObj) {
