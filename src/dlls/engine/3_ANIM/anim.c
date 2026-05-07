@@ -99,9 +99,6 @@ typedef struct {
 /*0x40*/ static const char str_40[] = "st->messages overflow\n";
 /*0x58*/ static const char str_58[] = " MODEL NO %i \n";
 /*0x68*/ static const char str_68[] = " Could Not FInd Obj %i  over %i \n";
-/*0x8C*/ static const char str_8C[] = "****END\n";
-/*0x98*/ static const char str_98[] = "endObjSequence: too many obj frees\n";
-/*0xBC*/ static const char str_BC[] = "preemptSequenceTime() Overflow!!\n";
 
 /*0x0*/ static u32 _data_0 = 0x00000000;
 /*0x4*/ static u32 _data_4[] = {
@@ -233,6 +230,7 @@ static void dll_3_func_9BC0(s32 arg0);
 void dll_3_func_906C(s32 arg0);
 static s32 dll_3_func_93A0(Object* actor);
 static void dll_3_func_9CE8(s32 arg0);
+static Object* dll_3_func_9C08(s32 animCurvesIndex, Object* searchObject);
 
 // offset: 0x0 | ctor
 void dll_3_ctor(void *dll) {
@@ -1260,7 +1258,88 @@ void dll_3_func_7CF0(void);
 #pragma GLOBAL_ASM("asm/nonmatchings/dlls/engine/3_ANIM/dll_3_func_81F8.s")
 
 // offset: 0x8598 | func: 45 | export: 10
-#pragma GLOBAL_ASM("asm/nonmatchings/dlls/engine/3_ANIM/dll_3_func_8598.s")
+s16 dll_3_func_8598(Object* animObj) {
+    AnimObj_Data* objdata;
+    AnimObj_Setup* objsetup;
+    Object* temp_v0_2;
+    Object* obj;
+    s32 targetObjID;
+    s32 i;
+    s32 _pad;
+    f32 closestDist;
+    Object** objList;
+    f32 distZ;
+    f32 distX;
+    f32 distY;
+    s32 numObjs;
+    s32 start;
+
+    objList = get_world_objects(&start, &numObjs);
+    objdata = animObj->data;
+    objsetup = (AnimObj_Setup*)animObj->setup;
+    if (animObj->group == 17) {
+        objdata->actor = NULL;
+        return -1;
+    }
+    switch (objsetup->unk1C) {
+    case 0:
+        objdata->actor = NULL;
+        break;
+    case 1:
+        objdata->actor = get_player();
+        break;
+    case 2:
+        objdata->actor = get_sidekick();
+        break;
+    case 3:
+        objdata->actor = NULL;
+        objdata->unk87 = (s8) (objsetup->unk1C - 2);
+        if (!(_bss_3A8[objdata->unk63] & 0x10)) {
+            gDLL_2_Camera->vtbl->set_letterbox_goal(30, TRUE);
+        }
+        break;
+    default:
+        objdata->actor = NULL;
+        targetObjID = objsetup->unk1C - 4;
+        if ((targetObjID == OBJ_Krystal) || (targetObjID == OBJ_Sabre)) {
+            objdata->actor = get_player();
+        } else if (objdata->unk118 != 0) {
+            objdata->actor = func_800211B4(objdata->unk118);
+        } else {
+            closestDist = -1.0f;
+            for (i = 0; i < numObjs; i++) {
+                obj = objList[i];
+                temp_v0_2 = dll_3_func_9C08(objdata->unk63, obj);
+                if (temp_v0_2 == animObj) {
+                    objdata->actor = obj;
+                    break;
+                }
+
+                if ((temp_v0_2 == NULL) && (targetObjID == obj->id)) {
+                    distX = animObj->srt.transl.x - obj->srt.transl.x;
+                    distY = animObj->srt.transl.y - obj->srt.transl.y;
+                    distZ = animObj->srt.transl.z - obj->srt.transl.z;
+                    
+                    if ((closestDist < 0.0f) || ((SQ(distX) + SQ(distY) + SQ(distZ)) < closestDist)) {
+                        objdata->actor = obj;
+                        closestDist = SQ(distX) + SQ(distY) + SQ(distZ);
+                    }
+                }
+            }
+        }
+        break;
+    }
+    if (objdata->actor != NULL) {
+        if (objdata->unk63 < 25) {
+            if (objdata->actor->unkB4 != -1) {
+                STUBBED_PRINTF("****END\n");
+                dll_3_func_906C(objdata->actor->unkB4);
+            }
+        }
+        return objdata->actor->tabIdx;
+    }
+    return -1;
+}
 
 // offset: 0x8878 | func: 46 | export: 12
 s32 dll_3_func_8878(void) {
@@ -1494,6 +1573,7 @@ s32 dll_3_func_8900(s32 objectSeqIndex, Object* object, s32 enabledActors) {
 }
 
 // offset: 0x906C | func: 53 | export: 18
+// official name: endObjSequence
 void dll_3_func_906C(s32 arg0) {
     s32 i;
     Object* obj;
@@ -1522,6 +1602,7 @@ void dll_3_func_906C(s32 arg0) {
                 sp48[var_a1] = obj;
                 var_a1 += 1;
                 if (var_a1 == 12) {
+                    STUBBED_PRINTF("endObjSequence: too many obj frees\n");
                     var_a1 = 11;
                 }
             }
@@ -1536,6 +1617,7 @@ void dll_3_func_906C(s32 arg0) {
 }
 
 // offset: 0x9358 | func: 54 | export: 20
+// official name: preemptSequenceTime
 void dll_3_func_9358(Object *arg0, s32 arg1) {
     ANIMBSSUnk0 *temp;
     s8 count;
@@ -1546,6 +1628,8 @@ void dll_3_func_9358(Object *arg0, s32 arg1) {
         temp->unk0 = arg0;
         temp->unk4 = arg1;
         _bss_20 = count + 1;
+    } else {
+        STUBBED_PRINTF("preemptSequenceTime() Overflow!!\n");
     }
 }
 
@@ -1765,7 +1849,7 @@ static void dll_3_func_9BC0(s32 arg0) {
 }
 
 // offset: 0x9C08 | func: 66
-Object* dll_3_func_9C08(s32 animCurvesIndex, Object* searchObject) {
+static Object* dll_3_func_9C08(s32 animCurvesIndex, Object* searchObject) {
     s32 i;
     ANIMActorOverride* actors;
 
