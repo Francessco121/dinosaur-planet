@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse
+from contextlib import nullcontext
 from io import BufferedReader, BufferedWriter
 from elftools.elf.elffile import ELFFile
 from elftools.elf.sections import Section, SymbolTableSection, Symbol
@@ -14,7 +15,7 @@ import struct
 # Hacks to assist in producing matching DLLs when a DLL is still compiled from some nonmatching asm. 
 # Should only be used by the decomp! Should not be used for DLLs that are entirely in C.
 hack_sym_bind_override: Callable[[int, Symbol], str] | None = None
-hack_got_reloc_override: Callable[[GOTAndRelocations], None] | None = None
+hack_got_reloc_override: Callable[[GOTAndRelocations, list[Import]], None] | None = None
 
 HEADER_SIZE = 0x18
 
@@ -26,10 +27,15 @@ class Exports(TypedDict):
     dtor: int
     exports: "list[int]"
 
+class Import(TypedDict):
+    got_index: int
+    symbol_name: str
+
 class ReadRelocations(TypedDict):
     got_and_relocs: "GOTAndRelocations | None"
     rodata_relocs: "list[GPRel32Reloc]"
     ri_gp_value: int | None
+    imports: "list[Import]"
 
 class GOTAndRelocations(TypedDict):
     got: "list[GOTEntry]"
@@ -108,6 +114,7 @@ def read_elf_relocations(elf: ELFFile,
     data_relocs: "list[Word32Reloc]" = []
     rodata_relocs: "list[GPRel32Reloc]" = []
     ri_gp_value: int | None = None
+    imports: "list[Import]" = []
 
     # First four GOT entries are always the sections (in this order)
     got.append({ "value": 0, "section": ".text" })
@@ -156,9 +163,6 @@ def read_elf_relocations(elf: ELFFile,
             if hack_sym_bind_override != None:
                 st_info_bind = hack_sym_bind_override(sym_idx, sym)
 
-            if sym_shndx == "SHN_UNDEF" and sym.name != "_gp_disp":
-                raise ELF2DLLException(f".rel.text reloc with offset {hex(reloc_offset)} references an undefined symbol: {sym.name}")
-
             if reloc_type == ENUM_RELOC_TYPE_MIPS["R_MIPS_GOT16"] or \
                     reloc_type == ENUM_RELOC_TYPE_MIPS["R_MIPS_CALL16"]:
                 # GOT reloc
@@ -182,8 +186,13 @@ def read_elf_relocations(elf: ELFFile,
                         syms_to_got[sym_idx] = got_idx
                         
                         section: str | None = None
-                        if sym_shndx != "SHN_ABS":
+                        if sym_shndx != "SHN_ABS" and sym_shndx != "SHN_UNDEF":
                             section = elf.get_section(sym_shndx).name
+                        # For undefined symbols, create an import and set a placeholder GOT value for now.
+                        # These entries will be patched later when DLL imports have been resolved.
+                        if sym_shndx == "SHN_UNDEF":
+                            sym_value = 0x8000_0000
+                            imports.append({ "got_index": got_idx, "symbol_name": sym.name })
                         
                         got.append({ "value": sym_value, "section": section })
 
@@ -363,12 +372,13 @@ def read_elf_relocations(elf: ELFFile,
         }
 
         if hack_got_reloc_override != None:
-            hack_got_reloc_override(got_and_relocs)
+            hack_got_reloc_override(got_and_relocs, imports)
     
     return {
         "got_and_relocs": got_and_relocs,
         "rodata_relocs": rodata_relocs,
-        "ri_gp_value": ri_gp_value
+        "ri_gp_value": ri_gp_value,
+        "imports": imports
     }
 
 def replace_gp_prologue_with_dino_version(writer: BufferedWriter, text_pos: int, gp_relocs: "list[int]"):
@@ -416,7 +426,7 @@ def calc_got_and_relocs_size(got_and_relocs: GOTAndRelocations) -> int:
 def align(n: int, alignment: int) -> int:
     return math.ceil(n / alignment) * alignment
 
-def convert(elf: ELFFile, writer: BufferedWriter, bss_writer: TextIO, syms_writer: TextIO | None):
+def convert(elf: ELFFile, writer: BufferedWriter, bss_writer: TextIO, imports_writer: TextIO, syms_writer: TextIO | None):
     # Read input sections
     text = elf.get_section_by_name(".text")
     rodata = elf.get_section_by_name(".rodata")
@@ -550,6 +560,12 @@ def convert(elf: ELFFile, writer: BufferedWriter, bss_writer: TextIO, syms_write
     # Write .bss size to text file
     bss_writer.write(hex(bss_size))
 
+    # Write imports to text file
+    for imprt in read_relocations["imports"]:
+        got_idx = imprt["got_index"]
+        sym_name = imprt["symbol_name"]
+        imports_writer.write(f"{got_idx},{sym_name}\n")
+
     # Write symbols for debugging (if enabled)
     if syms_writer != None:
         syms = elf.get_section_by_name(".symtab")
@@ -582,30 +598,29 @@ def convert(elf: ELFFile, writer: BufferedWriter, bss_writer: TextIO, syms_write
 
             syms_writer.write("{} = 0x{:X};\n".format(sym.name, sym_value))
 
-def elf2dll(elf: BufferedReader, output: BufferedWriter, bss_output: TextIO, syms_output: TextIO | None):
+def elf2dll(elf: BufferedReader, output: BufferedWriter, bss_output: TextIO, imports_output: TextIO, syms_output: TextIO | None):
     """Raises ELF2DLLException on error"""
     with ELFFile(elf) as elffile:
-        convert(elffile, output, bss_output, syms_output)
+        convert(elffile, output, bss_output, imports_output, syms_output)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("elf", type=argparse.FileType("rb"), help="The DLL .elf file to convert.")
-    parser.add_argument("-o", "--output", type=argparse.FileType("wb"), help="The path of the Dinosaur Planet DLL file to output.", required=True)
-    parser.add_argument("-b", "--bss", type=argparse.FileType("w", encoding="utf-8"), help="Path to output the .bss size as a text file.", required=True)
-    parser.add_argument("-s", "--syms-map", dest="syms_output", type=argparse.FileType("w", encoding="utf-8"), help="Path to output symbol mapping for debugging.")
+    parser.add_argument("elf", type=str, help="The DLL .elf file to convert.")
+    parser.add_argument("-o", "--output", type=str, help="The path of the Dinosaur Planet DLL file to output.", required=True)
+    parser.add_argument("-b", "--bss", type=str, help="Path to output the .bss size as a text file.", required=True)
+    parser.add_argument("-m", "--imports", type=str, help="Path to output the imports list as a text file.", required=True)
+    parser.add_argument("-s", "--syms-map", dest="syms_output", type=str, help="Path to output symbol mapping for debugging.")
     args = parser.parse_args()
     
-    error = False
     try:
-        elf2dll(args.elf, args.output, args.bss, args.syms_output)
+        with open(args.elf, "rb") as elf, \
+             open(args.output, "wb") as output, \
+             open(args.bss, "w", encoding="utf-8") as bss, \
+             open(args.imports, "w", encoding="utf-8") as imports, \
+             (open(args.syms_output, "w", encoding="utf-8") if args.syms_output else nullcontext()) as syms_output:
+            elf2dll(elf, output, bss, imports, syms_output)
     except ELF2DLLException as ex:
         print(f"ERROR: {ex}")
-        error = True
-    finally:
-        args.output.close()
-        args.bss.close()
-    
-    if error:
         exit(1)
 
 if __name__ == "__main__":

@@ -103,6 +103,7 @@ objdiff.json
 # Splat managed files
 include/macro.inc
 dino.ld
+ld/*.ld
 .splat_cache
 undefined_syms_auto.txt
 undefined_funcs_auto.txt

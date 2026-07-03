@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+from contextlib import nullcontext
 from io import BufferedWriter
 import struct
 from typing import TextIO
@@ -67,7 +68,7 @@ def sym_bind_hack(idx: int, sym: Symbol, export_syms: set[int]):
 # will not necessarily be correct. The lexical order that relocations appear in a disassembly is not
 # always the same order that IDO will emit them. This function uses the original DLL's GOT as a reference
 # to re-sort the GOT of the recompiled DLL and also sorts the $gp relocation table by ascending address.
-def got_relocs_hack(got_and_relocs: elf2dll.GOTAndRelocations, target_got: list[int] | None):
+def got_relocs_hack(got_and_relocs: elf2dll.GOTAndRelocations, imports: list[elf2dll.Import], target_got: list[int] | None):
     if target_got == None:
         return
 
@@ -116,38 +117,42 @@ def got_relocs_hack(got_and_relocs: elf2dll.GOTAndRelocations, target_got: list[
 
     got_and_relocs["gp_relocs"].sort()
 
-def convert(obj: ELFFile, writer: BufferedWriter, bss_writer: TextIO, syms_writer: TextIO | None):
+    for imprt in imports:
+        print(imprt["got_index"], "->", got_remap[imprt["got_index"]])
+        imprt["got_index"] = got_remap[imprt["got_index"]]
+    
+    imports.sort(key=lambda x: x["got_index"])
+
+def convert(obj: ELFFile, writer: BufferedWriter, bss_writer: TextIO, imports_writer: TextIO, syms_writer: TextIO | None):
     # Set up elf2dll hack callbacks
     export_syms = read_exports(obj)
     original_got = read_got(obj)
 
     elf2dll.hack_sym_bind_override = lambda idx,sym: sym_bind_hack(idx, sym, export_syms)
-    elf2dll.hack_got_reloc_override = lambda x: got_relocs_hack(x, original_got)
+    elf2dll.hack_got_reloc_override = lambda x,imprts: got_relocs_hack(x, imprts, original_got)
 
     # Run elf2dll
-    elf2dll.convert(obj, writer, bss_writer, syms_writer)
+    elf2dll.convert(obj, writer, bss_writer, imports_writer, syms_writer)
 
 def main():
     parser = argparse.ArgumentParser(description="Runs elf2dll while handling quirks from nonmatching asm.")
-    parser.add_argument("elf", type=argparse.FileType("rb"), help="The DLL .elf file to convert.")
-    parser.add_argument("-o", "--output", type=argparse.FileType("wb"), help="The path of the Dinosaur Planet DLL file to output.", required=True)
-    parser.add_argument("-b", "--bss", type=argparse.FileType("w", encoding="utf-8"), help="Path to output the .bss size as a text file.", required=True)
-    parser.add_argument("-s", "--syms-map", dest="syms_output", type=argparse.FileType("w", encoding="utf-8"), help="Path to output symbol mapping for debugging.")
+    parser.add_argument("elf", type=str, help="The DLL .elf file to convert.")
+    parser.add_argument("-o", "--output", type=str, help="The path of the Dinosaur Planet DLL file to output.", required=True)
+    parser.add_argument("-b", "--bss", type=str, help="Path to output the .bss size as a text file.", required=True)
+    parser.add_argument("-m", "--imports", type=str, help="Path to output the imports list as a text file.", required=True)
+    parser.add_argument("-s", "--syms-map", dest="syms_output", type=str, help="Path to output symbol mapping for debugging.")
     args = parser.parse_args()
 
-    error = False
-    with ELFFile(args.elf) as obj:
-        try:
-            convert(obj, args.output, args.bss, args.syms_output)
-        except elf2dll.ELF2DLLException as ex:
-            print(f"ERROR: {ex}")
-            error = True
-
-    # Done (elf is already closed by the above 'with')
-    args.output.close()
-    args.bss.close()
-
-    if error:
+    try:
+        with open(args.elf, "rb") as elf, \
+             open(args.output, "wb") as output, \
+             open(args.bss, "w", encoding="utf-8") as bss, \
+             open(args.imports, "w", encoding="utf-8") as imports, \
+             (open(args.syms_output, "w", encoding="utf-8") if args.syms_output else nullcontext()) as syms_output, \
+             ELFFile(elf) as obj:
+            convert(obj, output, bss, imports, syms_output)
+    except elf2dll.ELF2DLLException as ex:
+        print(f"ERROR: {ex}")
         exit(1)
 
 if __name__ == "__main__":

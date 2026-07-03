@@ -46,6 +46,12 @@ class BuildFile:
         self.type = type
         self.config = config
 
+class BuildSegment:
+    def __init__(self, name: str, link_script_path: str, files: "list[BuildFile]"):
+        self.name = name
+        self.link_script_path = link_script_path
+        self.files = files
+
 class AssetFile:
     def __init__(self, src_path: str):
         self.src_path = src_path
@@ -64,8 +70,8 @@ class DLL:
         self.undefined_syms_file = undefined_syms_file
 
 class BuildFiles:
-    def __init__(self, files: "list[BuildFile]", assets: "list[AssetFile]", dlls: "list[DLL]"):
-        self.files = files # excludes DLLs
+    def __init__(self, segments: "dict[str, BuildSegment]", assets: "list[AssetFile]", dlls: "list[DLL]"):
+        self.segments = segments # excludes DLLs
         self.assets = assets
         self.dlls = dlls
 
@@ -105,6 +111,10 @@ class BuildNinjaWriter:
                 "undefined_syms_hack.txt", 
             ]
         self.link_deps: "list[str]" = [] + self.symbol_files
+        self.segment_link_deps: "dict[str, list[str]]" = {}
+        for seg in input.segments.keys():
+            self.segment_link_deps[seg] = []
+        self.segment_link_deps["core"].append("libultra_syms.txt")
         self.expected_targets: "list[str]" = []
 
     def write(self):
@@ -112,13 +122,16 @@ class BuildNinjaWriter:
         self.__write_prelude()
 
         # Write builds for source compilation
-        self.__write_file_builds()
+        for name, segment in self.input.segments.items():
+            self.__write_file_builds(segment, self.segment_link_deps[name])
         
         # Write DLL builds/linking
         self.__write_dll_builds()
 
         # Write asset builds/packing
-        self.__write_asset_builds()
+        self.__write_asset_builds(
+            self.segment_link_deps["assets"], 
+            self.segment_link_deps["assets_tab"])
 
         # Write main linker step
         self.__write_linking()
@@ -215,14 +228,18 @@ class BuildNinjaWriter:
 
         symbol_files_link_args = [f"-T {x}" for x in self.symbol_files]
         self.writer.variable("LD_FLAGS", " ".join(symbol_files_link_args + [
-            "-T $LINK_SCRIPT",
             "-Map $BUILD_DIR/$TARGET.map",
             "--no-check-sections",
             "-m $LD_EMULATION",
         ]))
 
+        self.writer.variable("LD_FLAGS_SEG", " ".join([
+            "-r",
+            "--emit-relocs",
+            "-m $LD_EMULATION",
+        ]))
+
         self.writer.variable("LD_FLAGS_DLL", " ".join([
-            "-T $BUILD_DIR/export_symbol_addrs.ld", 
             "-r",
             "--emit-relocs",
             "-m $LD_EMULATION",
@@ -268,8 +285,9 @@ class BuildNinjaWriter:
         self.writer.variable("ELF2DLL", f"{sys.executable} tools/elf2dll.py")
         self.writer.variable("ELF2DLL_WRAPPER", f"{sys.executable} tools/elf2dll_wrapper.py")
         self.writer.variable("DINODLL", f"{sys.executable} tools/dino_dll.py")
-        self.writer.variable("DINOFS", f"{sys.executable} tools/dino_fs.py")
         self.writer.variable("DLLSYMS2LD", f"{sys.executable} tools/dllsyms2ld.py")
+        self.writer.variable("MK_DLLSIMPORTTAB", f"{sys.executable} tools/mk_dllsimporttab.py")
+        self.writer.variable("DINOFS", f"{sys.executable} tools/dino_fs.py")
         self.writer.variable("SYNTAX_CHECK", f"{sys.executable} tools/syntax_check.py")
         self.writer.variable("PATCHMIPS3", f"{sys.executable} tools/patchmips3.py")
         self.writer.variable("N64CKSUM", f"{sys.executable} tools/n64cksum.py")
@@ -300,15 +318,18 @@ class BuildNinjaWriter:
             depfile="$out.d")
         self.writer.rule("as", "$AS $AS_FLAGS -o $out $in", "Assembling $in...")
         self.writer.rule("as_dll", "$AS $AS_FLAGS_DLL -o $out $in", "Assembling $in...")
-        self.writer.rule("ld", "$LD $LD_FLAGS -o $out", "Linking...")
+        self.writer.rule("ld", "$LD $LD_FLAGS -o $out -T $in", "Linking...")
+        # TODO: FIX HORRIBLE HARDCODED SCRIPT ARG
+        self.writer.rule("ld_seg", "$LD $LD_FLAGS_SEG -o $out -T $in -T libultra_syms.txt -Map $LD_MAP", "Linking segment...")
         self.writer.rule("ld_dll", "$LD $LD_FLAGS_DLL -Map $out.map -T $SYMS_LD -T $LINK_SCRIPT_DLL $in -o $out", "Linking DLL...")
         self.writer.rule("ld_asm_dll", "$LD $LD_FLAGS_DLL $EXTRA_DLL_LD_FLAGS -T $LINK_SCRIPT_DLL $in -o $out", "Linking DLL...")
         self.writer.rule("ld_bin", "$LD -m $LD_EMULATION -r -b binary -o $out $in", "Linking binary $in...")
         self.writer.rule("to_bin", "$OBJCOPY $in $out -O binary", "Converting $in to $out...")
         self.writer.rule("file_copy", "cp $in $out", "Copying $in to $out...")
         self.writer.rule("dllsyms2ld", "$DLLSYMS2LD -o $out $in", "Converting $in to $out...")
-        self.writer.rule("elf2dll", "$ELF2DLL -o $out -b $DLL_BSS_TXT $in", "Converting $in to DP DLL $out...")
-        self.writer.rule("elf2dll_wrapper", "$ELF2DLL_WRAPPER -o $out -b $DLL_BSS_TXT $in", "Converting $in to DP DLL $out...")
+        self.writer.rule("elf2dll", "$ELF2DLL -o $out -b $DLL_BSS_TXT -m $DLL_IMPORTS_TXT $in", "Converting $in to DP DLL $out...")
+        self.writer.rule("elf2dll_wrapper", "$ELF2DLL_WRAPPER -o $out -b $DLL_BSS_TXT -m $DLL_IMPORTS_TXT $in", "Converting $in to DP DLL $out...")
+        self.writer.rule("mk_dllsimporttab", "$MK_DLLSIMPORTTAB -e $CORE_ELF -d $DLL_ASSET_DIR -o $out $in", "Building $out...")
         self.writer.rule("pack_dlls", "$DINODLL pack $DLLS_DIR $DLLS_BIN_OUT $DLLS_TAB_IN -q --tab_out $DLLS_TAB_OUT", "Packing DLLs...")
         self.writer.rule("pack_assets", "$DINOFS pack --bin $ASSETS_BIN_OUT --tab $ASSETS_TAB_OUT $in", "Packing assets...")
         self.writer.rule("patchmips3", "$PATCHMIPS3 $in $out", "Patching $in...")
@@ -316,10 +337,10 @@ class BuildNinjaWriter:
 
         self.writer.newline()
 
-    def __write_file_builds(self):
-        self.writer.comment("Core compilation")
+    def __write_file_builds(self, segment: BuildSegment, link_deps: list[str]):
+        self.writer.comment(f"{segment.name} compilation")
 
-        for file in self.input.files:
+        for file in segment.files:
             # Determine variables
             variables: dict[str, str] = self.__file_config_to_variables(file.config)
 
@@ -371,7 +392,7 @@ class BuildNinjaWriter:
                 self.writer.build(obj_build_path, "patchmips3", unpatched_path)
             else:
                 self.writer.build(obj_build_path, command, src_build_path, variables=variables)
-            self.link_deps.append(obj_build_path)
+            link_deps.append(obj_build_path)
 
             # Build expected object file from asm
             exp_obj_build_path = f"$EXPECTED_BUILD_DIR/{Path(file.obj_path).as_posix()}"
@@ -387,14 +408,10 @@ class BuildNinjaWriter:
         self.writer.newline()
 
     def __write_dll_builds(self):
-        self.writer.comment("Convert export symbols to linker script")
-        self.writer.build("$BUILD_DIR/export_symbol_addrs.ld", "dllsyms2ld", "export_symbol_addrs.txt")
-
-        pack_deps: "list[str]" = []
+        dll_files: "list[str]" = []
 
         self.writer.comment("DLL compilation")
 
-        pack_deps: "list[str]" = []
         for dll in self.input.dlls:
             self.writer.comment(f"DLL {dll.number}")
 
@@ -454,10 +471,8 @@ class BuildNinjaWriter:
                 if custom_link_script.exists():
                     # Use DLL's custom link script
                     # Note: Assume custom script lists all inputs
-                    implicit_deps = [str(custom_link_script), syms_ld_path, "$BUILD_DIR/export_symbol_addrs.ld"]
-                    implicit_deps.extend(dll_link_deps)
                     self.writer.build(elf_path.as_posix(), "ld_dll", [], 
-                        implicit=implicit_deps,
+                        implicit=dll_link_deps + [syms_ld_path],
                         variables={
                             "SYMS_LD": syms_ld_path,
                             "LINK_SCRIPT_DLL": str(custom_link_script)
@@ -465,24 +480,27 @@ class BuildNinjaWriter:
                 else:
                     # Use default DLL link script
                     self.writer.build(elf_path.as_posix(), "ld_dll", dll_link_deps, 
-                        implicit=["$LINK_SCRIPT_DLL", syms_ld_path, "$BUILD_DIR/export_symbol_addrs.ld"],
+                        implicit=["$LINK_SCRIPT_DLL", syms_ld_path],
                         variables={"SYMS_LD": syms_ld_path})
 
                 # Convert ELF to Dinosaur Planet DLL
-                dll_asset_path = f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll"
+                dll_path = f"$BUILD_DIR/{dll.src_dir}/{dll.number}.dll"
                 dll_bss_asset_path = f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll.bss.txt"
+                dll_imports_asset_path = f"$BUILD_DIR/{dll.src_dir}/{dll.number}.dll.imports.txt"
                 elf2dll_cmd = "elf2dll"
-                elf2dll_variables = { "DLL_BSS_TXT": dll_bss_asset_path }
+                elf2dll_variables = {
+                    "DLL_BSS_TXT": dll_bss_asset_path, 
+                    "DLL_IMPORTS_TXT": dll_imports_asset_path
+                }
                 elf2dll_implicit = []
                 if has_asm:
                     # If nonmatching asm was involved, run the elf2dll wrapper
                     elf2dll_cmd = "elf2dll_wrapper"
-                self.writer.build(dll_asset_path, elf2dll_cmd, elf_path.as_posix(),
+                self.writer.build(dll_path, elf2dll_cmd, elf_path.as_posix(),
                     variables=elf2dll_variables,
                     implicit=elf2dll_implicit,
-                    implicit_outputs=[dll_bss_asset_path])
-                pack_deps.append(dll_asset_path)
-                pack_deps.append(dll_bss_asset_path)
+                    implicit_outputs=[dll_bss_asset_path, dll_imports_asset_path])
+                dll_files.append(dll_path)
 
                 # Build expected dir file for DLL
                 if dll.asm_file != None:
@@ -506,33 +524,57 @@ class BuildNinjaWriter:
 
                 elf_path = Path(f"$BUILD_DIR/asm/dlls/{dll.number}.elf")
                 self.writer.build(elf_path.as_posix(), "ld_asm_dll", [obj_build_path], 
-                    implicit=["$LINK_SCRIPT_DLL", "$BUILD_DIR/export_symbol_addrs.ld"],
+                    implicit=["$LINK_SCRIPT_DLL"],
                     variables={
                         "EXTRA_DLL_LD_FLAGS": ld_flags
                     })
 
                 # Convert ELF to Dinosaur Planet DLL
-                dll_asset_path = f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll"
+                dll_path = f"$BUILD_DIR/asm/dlls/{dll.number}.dll"
                 dll_bss_asset_path = f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll.bss.txt"
-                self.writer.build(dll_asset_path, "elf2dll_wrapper", elf_path.as_posix(),
+                dll_imports_asset_path = f"$BUILD_DIR/asm/dlls/{dll.number}.dll.imports.txt"
+                self.writer.build(dll_path, "elf2dll_wrapper", elf_path.as_posix(),
                     variables={
-                        "DLL_BSS_TXT": dll_bss_asset_path
+                        "DLL_BSS_TXT": dll_bss_asset_path,
+                        "DLL_IMPORTS_TXT": dll_imports_asset_path
                     },
-                    implicit_outputs=[dll_bss_asset_path])
-                pack_deps.append(dll_asset_path)
-                pack_deps.append(dll_bss_asset_path)
+                    implicit_outputs=[dll_bss_asset_path, dll_imports_asset_path])
+                dll_files.append(dll_path)
             
                 # Build expected dir file for DLL
                 expected_obj_build_path = f"$EXPECTED_BUILD_DIR/{Path(dll.asm_file.obj_path).as_posix()}"
                 self.writer.build(expected_obj_build_path, "file_copy", obj_build_path)
                 self.expected_targets.append(expected_obj_build_path)
 
+        # Build DLLSIMPORTTAB.bin
+        self.writer.newline()
+        self.writer.comment("DLL imports")
+
+        core_seg = self.input.segments["core"]
+        core_seg_basename = Path(core_seg.link_script_path).stem
+        core_seg_obj_path = f"$BUILD_DIR/segments/{core_seg_basename}.o"
+        dll_asset_paths: "list[str]" = []
+        for dll in self.input.dlls:
+            dll_asset_paths.append(f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll")
+        self.writer.build("$BUILD_DIR/bin/assets/DLLSIMPORTTAB.bin", "mk_dllsimporttab",
+                          inputs=dll_files,
+                          implicit=[core_seg_obj_path],
+                          variables={
+                              "CORE_ELF": core_seg_obj_path,
+                              "DLL_ASSET_DIR": "$BUILD_DIR/bin/assets/dlls"
+                          },
+                          implicit_outputs=dll_asset_paths)
+
+        # Pack DLLs
         self.writer.newline()
         self.writer.comment("DLL packing")
 
-        # Pack DLLs
         if not self.config.skip_dlls:
             # Pack
+            pack_deps: "list[str]" = []
+            for dll in self.input.dlls:
+                pack_deps.append(f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll")
+                pack_deps.append(f"$BUILD_DIR/bin/assets/dlls/{dll.number}.dll.bss.txt")
             self.writer.build(
                 outputs=["$BUILD_DIR/bin/assets/DLLS.bin", "$BUILD_DIR/bin/assets/DLLS.tab"], 
                 rule="pack_dlls", 
@@ -551,22 +593,22 @@ class BuildNinjaWriter:
 
         self.writer.newline()
 
-    def __write_asset_builds(self):
+    def __write_asset_builds(self, assets_link_deps: list[str], assets_tab_link_deps: list[str]):
         self.writer.comment("Asset compilation")
 
         # Copy assets to build directory
-        pack_deps: "list[str]" = []
+        pack_inputs: "list[str]" = []
         for file in self.input.assets:
             dst_build_path = f"$BUILD_DIR/{Path(file.src_path).as_posix()}"
 
-            # DLLS.bin and DLLS.tab are built from another part of the build process
-            if file.src_path.endswith("DLLS.bin") or file.src_path.endswith("DLLS.tab"):
-                pack_deps.append(dst_build_path)
+            # DLLS.bin, DLLS.tab, and DLLSIMPORTTAB.bin are built from another part of the build process
+            if file.src_path.endswith("DLLS.bin") or file.src_path.endswith("DLLS.tab") or file.src_path.endswith("DLLSIMPORTTAB.bin"):
+                pack_inputs.append(dst_build_path)
                 continue
 
             src_path = Path(file.src_path).as_posix()
             self.writer.build(dst_build_path, "file_copy", src_path)
-            pack_deps.append(dst_build_path)
+            pack_inputs.append(dst_build_path)
         
         self.writer.newline()
         self.writer.comment("Asset packing")
@@ -575,25 +617,35 @@ class BuildNinjaWriter:
         self.writer.build(
             outputs=["$BUILD_DIR/bin/assets.bin", "$BUILD_DIR/bin/assets_tab.bin"], 
             rule="pack_assets", 
-            inputs=pack_deps, 
+            inputs=pack_inputs, 
             variables={
                 "ASSETS_BIN_OUT": "$BUILD_DIR/bin/assets.bin",
                 "ASSETS_TAB_OUT": "$BUILD_DIR/bin/assets_tab.bin"
             })
         # Link
         self.writer.build("$BUILD_DIR/bin/assets.o", "ld_bin", "$BUILD_DIR/bin/assets.bin")
-        self.link_deps.append("$BUILD_DIR/bin/assets.o")
         self.writer.build("$BUILD_DIR/bin/assets_tab.o", "ld_bin", "$BUILD_DIR/bin/assets_tab.bin")
-        self.link_deps.append("$BUILD_DIR/bin/assets_tab.o")
+        assets_link_deps.append("$BUILD_DIR/bin/assets.o")
+        assets_tab_link_deps.append("$BUILD_DIR/bin/assets_tab.o")
 
         self.writer.newline()
 
     def __write_linking(self):
         self.writer.comment("Linking")
 
-        # Link
-        self.link_deps.append("$LINK_SCRIPT")
-        self.writer.build("$BUILD_DIR/$TARGET.elf", "ld", [], implicit=self.link_deps)
+        # Link segments
+        for name, segment in self.input.segments.items():
+            deps = self.segment_link_deps[name]
+            basename = Path(segment.link_script_path).stem
+            obj_path = f"$BUILD_DIR/segments/{basename}.o"
+
+            self.writer.build(obj_path, "ld_seg", segment.link_script_path, implicit=deps,
+                              variables={"LD_MAP": f"$BUILD_DIR/segments/{basename}.map"})
+
+            self.link_deps.append(obj_path)
+
+        # Link main elf
+        self.writer.build("$BUILD_DIR/$TARGET.elf", "ld", "$LINK_SCRIPT", implicit=self.link_deps)
 
         # Convert .elf to .z64
         if self.nonmatching:
@@ -656,7 +708,7 @@ class ObjDiffConfigWriter:
         units = []
         config["units"] = units
 
-        for file in self.input.files:
+        for file in self.input.segments["core"].files:
             if file.type == BuildFileType.C:
                 target = Path(f"{self.config.expected_build_dir}/{file.obj_path}")
                 units.append({
@@ -724,7 +776,14 @@ class InputScanner:
         self.config = config
 
     def scan(self) -> BuildFiles:
-        self.files: "list[BuildFile]" = []
+        self.segments: "dict[str, BuildSegment]" = {
+            "header": BuildSegment("Header", "ld/header.ld", []),
+            "boot": BuildSegment("Boot", "ld/boot.ld", []),
+            "core": BuildSegment("Core", "ld/core.ld", []),
+            "assets_tab": BuildSegment("assets.tab", "ld/assets_tab.ld", []),
+            "assets": BuildSegment("assets.bin", "ld/assets.ld", []),
+            "trailer": BuildSegment("Trailer", "ld/trailer.ld", []),
+        }
         self.assets: "list[AssetFile]" = []
         self.dlls: "list[DLL]" = []
 
@@ -737,27 +796,30 @@ class InputScanner:
         if not self.config.skip_dlls:
             self.__scan_dlls()
 
-        return BuildFiles(self.files, self.assets, self.dlls)
+        return BuildFiles(self.segments, self.assets, self.dlls)
         
     def __scan_c_files(self):
         # Exclude DLLs here, that's done separately
+        core_seg = self.segments["core"]
         paths = [Path(path) for path in glob.glob("src/**/*.c", recursive=True) if not Path(path).is_relative_to(Path("src/dlls"))]
         for src_path in paths:
             obj_path = self.__make_obj_path(src_path)
             file_config = self.__get_file_config(src_path)
-            self.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.C, file_config))
+            core_seg.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.C, file_config))
         
         return set(path.relative_to("src") for path in paths)
 
     def __scan_hasm_files(self):
+        core_seg = self.segments["core"]
         paths = [Path(path) for path in glob.glob("src/**/*.s", recursive=True) if not Path(path).is_relative_to(Path("src/dlls"))]
         for src_path in paths:
             obj_path = self.__make_obj_path(src_path)
-            self.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.ASM))
+            core_seg.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.ASM))
         
         return set(path.relative_to("src") for path in paths)
 
     def __scan_asm_files(self, c_paths: set[Path]):
+        core_seg = self.segments["core"]
         # Exclude splat nonmatchings, those are compiled in with their respective C file.
         # Also exclude any asm that is a full extract of a C file we're compiling, we don't want both 
         # (the asm is for the expected dir in this case).
@@ -769,15 +831,27 @@ class InputScanner:
                 src_path.relative_to("asm").with_suffix(".c") in c_paths:
                 continue
             obj_path = self.__make_obj_path(src_path)
-            self.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.ASM))
+            seg = core_seg
+            if src_path.stem == "header":
+                seg = self.segments["header"]
+            seg.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.ASM))
 
     def __scan_bin_files(self):
+        core_seg = self.segments["core"]
+        assets_seg = self.segments["assets"]
         paths = [Path(path) for path in glob.glob("bin/**/*.bin", recursive=True)]
         for src_path in paths:
             if src_path.is_relative_to("bin/assets") or src_path.name == "assets.bin" or src_path.name == "assets_tab.bin":
                 continue
             obj_path = self.__make_obj_path(src_path)
-            self.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.BIN))
+            seg = core_seg
+            if src_path.is_relative_to("bin/leftovers"):
+                seg = assets_seg
+            elif src_path.name == "boot.bin":
+                seg = self.segments["boot"]
+            elif src_path.name == "trailer.bin":
+                seg = self.segments["trailer"]
+            seg.files.append(BuildFile(str(src_path), str(obj_path), BuildFileType.BIN))
     
     def __scan_asset_files(self):
         assets_path = Path("bin/assets")

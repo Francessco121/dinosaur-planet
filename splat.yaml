@@ -24,6 +24,9 @@ options:
   make_full_disasm_for_code: True
   # Allow use of 64-bit floating point registers
   generated_s_preamble: .set fp=64
+  ld_partial_linking: True
+  ld_partial_scripts_path: ld
+  ld_partial_build_segments_path: build/segments
 
 segments:
   - [0x000000, header]
